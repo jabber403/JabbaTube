@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload Video - YouTube</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="padding: 20px;">
+        <a href="index.html">
+            <img class="yt" src="yt.png" width="200" height="90" alt="Logo">
+        </a>
+        <h2>Upload a New Video</h2>
+        
+        <form id="uploadForm">
+            <input type="text" id="title" name="title" placeholder="Video Title" required style="padding: 8px; width: 300px;"><br><br>
+            <label>Video File:</label><br>
+            <input type="file" id="videoFile" name="videoFile" accept="video/*" required><br><br>
+            <label>Thumbnail Image:</label><br>
+            <input type="file" id="thumbnailFile" name="thumbnailFile" accept="image/*"><br><br>
+            <button type="submit" style="padding: 10px 20px; cursor: pointer;">Publish</button>
+        </form>
+    </div>
+
+    <script>
+        // Check if user is logged in
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            alert('You must be logged in to upload a video!');
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+
+            const formData = new FormData();
+            formData.append('title', document.getElementById('title').value);
+            formData.append('username', currentUser);
+            formData.append('videoFile', document.getElementById('videoFile').files[0]);
+            
+            const thumbnail = document.getElementById('thumbnailFile').files[0];
+            if (thumbnail) {
+                formData.append('thumbnailFile', thumbnail);
+            }
+
+            fetch('/api/upload', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => {
+                if (res.ok) {
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Upload failed.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

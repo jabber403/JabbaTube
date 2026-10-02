@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Watch Video</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="padding: 10px 20px; background: #222; display: flex; justify-content: space-between; align-items: center;">
+        <a href="index.html"><img class="yt" src="yt.png" width="150" height="70"></a>
+        <span id="userStatus" style="color: white;"></span>
+    </div>
+
+    <div style="display: flex; padding: 20px; gap: 30px; flex-wrap: wrap;">
+        <!-- Left Column: Video, Details, Likes, Comments -->
+        <div style="flex: 2; min-width: 400px;">
+            <video id="videoPlayer" class="Video" controls width="100%" height="450"></video>
+            <h1 id="videoTitle" class="Title" style="margin-top: 10px;">Loading...</h1>
+            <p id="uploaderContainer" style="margin: 5px 0;"></p>
+            
+            <div style="margin: 15px 0;">
+                <button id="likeBtn" style="padding: 8px 15px; cursor: pointer;">👍 <span id="likeCount">0</span></button>
+                <button id="dislikeBtn" style="padding: 8px 15px; cursor: pointer; margin-left: 10px;">👎 <span id="dislikeCount">0</span></button>
+            </div>
+
+            <hr style="margin: 20px 0;">
+
+            <h3>Comments</h3>
+            <form id="commentForm">
+                <input type="text" id="commentInput" placeholder="Add a comment..." required style="padding: 8px; width: 70%;">
+                <button type="submit" style="padding: 8px 15px;">Comment</button>
+            </form>
+            <div id="commentsList" style="margin-top: 15px;"></div>
+        </div>
+
+        <!-- Right Column: Sidebar Recommendations -->
+        <div style="flex: 1; min-width: 280px;">
+            <h3>Up Next</h3>
+            <div id="sidebar-recommendations" style="display: flex; flex-direction: column; gap: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser') || 'Guest';
+        if (currentUser !== 'Guest') {
+            document.getElementById('userStatus').innerHTML = `User: <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
+        } else {
+            document.getElementById('userStatus').textContent = `User: Guest`;
+        }
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const videoId = urlParams.get('id');
+
+        if (videoId) {
+            fetch(`/api/videos/${videoId}`)
+                .then(res => res.json())
+                .then(video => {
+                    document.getElementById('videoPlayer').src = video.videoUrl;
+                    document.getElementById('videoTitle').textContent = video.title;
+                    document.getElementById('likeCount').textContent = video.likes;
+                    document.getElementById('dislikeCount').textContent = video.dislikes;
+                    
+                    const uploaderElement = document.getElementById('uploaderContainer');
+                    if (video.uploader === currentUser) {
+                        uploaderElement.innerHTML = 'Uploaded by: <strong>You</strong>';
+                    } else {
+                        uploaderElement.innerHTML = `Uploaded by: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
+                    }
+
+                    renderComments(video.comments);
+                });
+
+            function sendVote(type) {
+                if (currentUser === 'Guest') {
+                    alert('Please login first to vote!');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                fetch(`/api/videos/${videoId}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: currentUser, type })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('likeCount').textContent = data.likes;
+                    document.getElementById('dislikeCount').textContent = data.dislikes;
+                });
+            }
+
+            document.getElementById('likeBtn').addEventListener('click', () => sendVote('like'));
+            document.getElementById('dislikeBtn').addEventListener('click', () => sendVote('dislike'));
+
+            document.getElementById('commentForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                if (currentUser === 'Guest') {
+                    alert('Please login to comment!');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                const text = document.getElementById('commentInput').value;
+                fetch(`/api/videos/${videoId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, username: currentUser })
+                })
+                .then(res => res.json())
+                .then(comments => {
+                    renderComments(comments);
+                    document.getElementById('commentInput').value = '';
+                });
+            });
+        }
+
+        fetch('/api/videos')
+            .then(res => res.json())
+            .then(videos => {
+                const sidebar = document.getElementById('sidebar-recommendations');
+                videos.forEach(video => {
+                    if (video.id != videoId) {
+                        const item = document.createElement('div');
+                        item.style.display = 'flex';
+                        item.style.gap = '10px';
+                        item.innerHTML = `
+                            <a href="view.html?id=${video.id}"><img src="${video.thumbnailUrl}" width="120" height="70" style="object-fit: cover;"></a>
+                            <div><a href="view.html?id=${video.id}" style="text-decoration: none; color: black;"><h4 style="margin: 0; font-size: 14px;">${video.title}</h4></a></div>
+                        `;
+                        sidebar.appendChild(item);
+                    }
+                });
+            });
+
+        function renderComments(comments) {
+            const list = document.getElementById('commentsList');
+            list.innerHTML = '';
+            comments.forEach(c => {
+                const authorDisplay = (c.username === currentUser) ? 'You' : `<a href="channel.html?name=${c.username}">${c.username}</a>`;
+                const p = document.createElement('p');
+                p.style.background = '#eee';
+                p.style.padding = '8px';
+                p.style.borderRadius = '4px';
+                p.innerHTML = `<strong>${authorDisplay}</strong> <span style="font-size: 11px; color: gray;">${c.date}</span><br>${c.text}`;
+                list.appendChild(p);
+            });
+        }
+    </script>
+</body>
+</html>

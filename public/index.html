@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>YouTube Home</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #222;">
+        <a href="index.html">
+            <img class="yt" src="yt.png" width="150" height="70" alt="Logo">
+        </a>
+        <div>
+            <span id="userStatus" style="color: white; margin-right: 15px;"></span>
+            <a href="upload.html"><button style="padding: 8px 15px; cursor: pointer;">Upload Video</button></a>
+            <a href="login.html" id="loginBtn"><button style="padding: 8px 15px; cursor: pointer; margin-left: 5px;">Login</button></a>
+        </div>
+    </div>
+
+    <div style="padding: 20px;">
+        <h2>Recommended Videos</h2>
+        <div id="video-grid" style="display: flex; flex-wrap: wrap; gap: 20px;"></div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+            document.getElementById('userStatus').innerHTML = `Hello, <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
+            document.getElementById('loginBtn').innerHTML = '<button onclick="logout()" style="padding: 8px 15px; cursor: pointer;">Logout</button>';
+        }
+
+        function logout() {
+            localStorage.removeItem('currentUser');
+            window.location.reload();
+        }
+
+        fetch('/api/videos')
+            .then(res => res.json())
+            .then(videos => {
+                const grid = document.getElementById('video-grid');
+                if (videos.length === 0) {
+                    grid.innerHTML = '<p>No videos uploaded yet.</p>';
+                    return;
+                }
+
+                videos.forEach(video => {
+                    const uploaderDisplay = (video.uploader === currentUser) 
+                        ? 'By You' 
+                        : `By: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
+
+                    const card = document.createElement('div');
+                    card.style.width = '300px';
+                    card.innerHTML = `
+                        <a href="view.html?id=${video.id}">
+                            <img class="Thumbnail" src="${video.thumbnailUrl}" width="300" height="170">
+                        </a>
+                        <h3 class="Title">${video.title}</h3>
+                        <p style="margin: 5px 0;">${uploaderDisplay}</p>
+                    `;
+                    grid.appendChild(card);
+                });
+            });
+    </script>
+</body>
+</html>
