@@ -2,58 +2,108 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Upload Video - YouTube</title>
+    <title>Upload Video - JabbaTube</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div style="padding: 20px;">
-        <a href="index.html">
-            <img class="yt" src="yt.png" width="200" height="90" alt="Logo">
-        </a>
-        <h2>Upload a New Video</h2>
-        
-        <form id="uploadForm">
-            <input type="text" id="title" name="title" placeholder="Video Title" required style="padding: 8px; width: 300px;"><br><br>
-            <label>Video File:</label><br>
-            <input type="file" id="videoFile" name="videoFile" accept="video/*" required><br><br>
-            <label>Thumbnail Image:</label><br>
-            <input type="file" id="thumbnailFile" name="thumbnailFile" accept="image/*"><br><br>
-            <button type="submit" style="padding: 10px 20px; cursor: pointer;">Publish</button>
-        </form>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <div style="margin-bottom: 20px;">
+        <a href="index.html"><img src="yt.png" width="120" alt="Logo"></a>
+    </div>
+
+    <h2>Upload a New Video</h2>
+    
+    <form id="uploadForm" style="max-width: 400px;">
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Video Title:</label>
+            <input type="text" id="title" name="title" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Video File:</label>
+            <input type="file" id="videoFile" name="videoFile" accept="video/*" required style="width: 100%;">
+        </div>
+
+        <div style="margin-bottom: 15px;">
+            <label style="display: block; margin-bottom: 5px; font-weight: bold;">Thumbnail Image (Optional):</label>
+            <input type="file" id="thumbnailFile" name="thumbnailFile" accept="image/*" style="width: 100%;">
+        </div>
+
+        <button type="submit" id="submitBtn" style="padding: 10px 20px; background: #cc0000; color: white; border: none; cursor: pointer; border-radius: 4px; font-weight: bold;">Upload Video</button>
+    </form>
+
+    <!-- Upload Progress Bar Container -->
+    <div id="progressContainer" style="display: none; margin-top: 20px; max-width: 400px;">
+        <progress id="uploadProgress" value="0" max="100" style="width: 100%; height: 25px;"></progress>
+        <p id="progressText" style="margin: 5px 0; font-weight: bold; color: #333;">Uploading: 0%</p>
     </div>
 
     <script>
-        // Check if user is logged in
         const currentUser = localStorage.getItem('currentUser');
         if (!currentUser) {
-            alert('You must be logged in to upload a video!');
+            alert('Please login first to upload videos!');
             window.location.href = 'login.html';
         }
 
-        document.getElementById('uploadForm').addEventListener('submit', (e) => {
+        document.getElementById('uploadForm').addEventListener('submit', function(e) {
             e.preventDefault();
 
-            const formData = new FormData();
-            formData.append('title', document.getElementById('title').value);
-            formData.append('username', currentUser);
-            formData.append('videoFile', document.getElementById('videoFile').files[0]);
-            
-            const thumbnail = document.getElementById('thumbnailFile').files[0];
-            if (thumbnail) {
-                formData.append('thumbnailFile', thumbnail);
+            const title = document.getElementById('title').value;
+            const videoFile = document.getElementById('videoFile').files[0];
+            const thumbnailFile = document.getElementById('thumbnailFile').files[0];
+
+            if (!videoFile) {
+                alert('Please select a video file.');
+                return;
             }
 
-            fetch('/api/upload', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => {
-                if (res.ok) {
-                    window.location.href = 'index.html';
-                } else {
-                    alert('Upload failed.');
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('username', currentUser);
+            formData.append('videoFile', videoFile);
+            if (thumbnailFile) {
+                formData.append('thumbnailFile', thumbnailFile);
+            }
+
+            // Disable submit button to prevent double-submissions
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Uploading...';
+
+            // Show progress bar
+            document.getElementById('progressContainer').style.display = 'block';
+
+            const xhr = new XMLHttpRequest();
+
+            // Track upload progress
+            xhr.upload.addEventListener('progress', function(e) {
+                if (e.lengthComputable) {
+                    const percentComplete = Math.round((e.loaded / e.total) * 100);
+                    document.getElementById('uploadProgress').value = percentComplete;
+                    document.getElementById('progressText').textContent = `Uploading: ${percentComplete}%`;
                 }
             });
+
+            // Handle response when complete
+            xhr.addEventListener('load', function() {
+                if (xhr.status === 200 || xhr.status === 302 || xhr.status === 303) {
+                    window.location.href = '/';
+                } else {
+                    alert('Upload failed. Server responded with status: ' + xhr.status);
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Upload Video';
+                    document.getElementById('progressContainer').style.display = 'none';
+                }
+            });
+
+            xhr.addEventListener('error', function() {
+                alert('An error occurred during the upload. Check your connection.');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Upload Video';
+                document.getElementById('progressContainer').style.display = 'none';
+            });
+
+            xhr.open('POST', '/api/upload', true);
+            xhr.send(formData);
         });
     </script>
 </body>
