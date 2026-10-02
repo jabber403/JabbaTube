@@ -96,7 +96,7 @@
         });
 
         function savePlayingState(id, title, url) {
-            localStorage.setItem('activeVideo', JSON.stringify({ id, title, url }));
+            localStorage.setItem('activeVideo', JSON.stringify({ id, title, url, currentTime: 0 }));
         }
 
         // Mini-Player Check on Load
@@ -105,10 +105,16 @@
         const miniPlayer = document.getElementById('miniVideoPlayer');
         const miniTitle = document.getElementById('miniTitle');
 
-        if (activeVideo) {
+        if (activeVideo && activeVideo.url) {
             miniContainer.style.display = 'block';
             miniPlayer.src = activeVideo.url;
             miniTitle.textContent = activeVideo.title;
+            miniPlayer.currentTime = activeVideo.currentTime || 0;
+
+            miniPlayer.addEventListener('timeupdate', () => {
+                activeVideo.currentTime = miniPlayer.currentTime;
+                localStorage.setItem('activeVideo', JSON.stringify(activeVideo));
+            });
         }
 
         function closeMiniPlayer() {

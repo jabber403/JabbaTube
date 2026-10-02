@@ -51,19 +51,33 @@
         const urlParams = new URLSearchParams(window.location.search);
         const videoId = urlParams.get('id');
         let currentVideoData = null;
+        const videoPlayer = document.getElementById('videoPlayer');
 
         if (videoId) {
             fetch(`/api/videos/${videoId}`)
                 .then(res => res.json())
                 .then(video => {
                     currentVideoData = video;
-                    document.getElementById('videoPlayer').src = video.videoUrl;
+                    videoPlayer.src = video.videoUrl;
                     document.getElementById('videoTitle').textContent = video.title;
                     document.getElementById('likeCount').textContent = video.likes;
                     document.getElementById('dislikeCount').textContent = video.dislikes;
                     
-                    // Save active video state immediately
-                    localStorage.setItem('activeVideo', JSON.stringify({ id: video.id, title: video.title, url: video.videoUrl }));
+                    // Check for existing playback position
+                    const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
+                    if (activeVideo && activeVideo.id == video.id) {
+                        videoPlayer.currentTime = activeVideo.currentTime || 0;
+                    }
+
+                    // Continuously save current time
+                    videoPlayer.addEventListener('timeupdate', () => {
+                        localStorage.setItem('activeVideo', JSON.stringify({ 
+                            id: video.id, 
+                            title: video.title, 
+                            url: video.videoUrl, 
+                            currentTime: videoPlayer.currentTime 
+                        }));
+                    });
 
                     const uploaderElement = document.getElementById('uploaderContainer');
                     if (video.uploader === currentUser) {
@@ -121,7 +135,12 @@
 
         function triggerMiniPlayer() {
             if (currentVideoData) {
-                localStorage.setItem('activeVideo', JSON.stringify({ id: currentVideoData.id, title: currentVideoData.title, url: currentVideoData.videoUrl }));
+                localStorage.setItem('activeVideo', JSON.stringify({ 
+                    id: currentVideoData.id, 
+                    title: currentVideoData.title, 
+                    url: currentVideoData.videoUrl, 
+                    currentTime: videoPlayer.currentTime 
+                }));
             }
         }
 
