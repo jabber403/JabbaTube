@@ -7,14 +7,14 @@
 </head>
 <body>
     <div style="padding: 10px 20px; background: #222; display: flex; justify-content: space-between; align-items: center;">
-        <a href="index.html"><img class="yt" src="yt.png" width="150" height="70"></a>
+        <a href="index.html" onclick="triggerMiniPlayer()"><img class="yt" src="yt.png" width="150" height="70"></a>
         <span id="userStatus" style="color: white;"></span>
     </div>
 
     <div style="display: flex; padding: 20px; gap: 30px; flex-wrap: wrap;">
         <!-- Left Column: Video, Details, Likes, Comments -->
         <div style="flex: 2; min-width: 400px;">
-            <video id="videoPlayer" class="Video" controls width="100%" height="450"></video>
+            <video id="videoPlayer" class="Video" controls width="100%" height="450" autoplay></video>
             <h1 id="videoTitle" class="Title" style="margin-top: 10px;">Loading...</h1>
             <p id="uploaderContainer" style="margin: 5px 0;"></p>
             
@@ -50,16 +50,21 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const videoId = urlParams.get('id');
+        let currentVideoData = null;
 
         if (videoId) {
             fetch(`/api/videos/${videoId}`)
                 .then(res => res.json())
                 .then(video => {
+                    currentVideoData = video;
                     document.getElementById('videoPlayer').src = video.videoUrl;
                     document.getElementById('videoTitle').textContent = video.title;
                     document.getElementById('likeCount').textContent = video.likes;
                     document.getElementById('dislikeCount').textContent = video.dislikes;
                     
+                    // Save active video state immediately
+                    localStorage.setItem('activeVideo', JSON.stringify({ id: video.id, title: video.title, url: video.videoUrl }));
+
                     const uploaderElement = document.getElementById('uploaderContainer');
                     if (video.uploader === currentUser) {
                         uploaderElement.innerHTML = 'Uploaded by: <strong>You</strong>';
@@ -114,6 +119,12 @@
             });
         }
 
+        function triggerMiniPlayer() {
+            if (currentVideoData) {
+                localStorage.setItem('activeVideo', JSON.stringify({ id: currentVideoData.id, title: currentVideoData.title, url: currentVideoData.videoUrl }));
+            }
+        }
+
         fetch('/api/videos')
             .then(res => res.json())
             .then(videos => {
@@ -124,8 +135,8 @@
                         item.style.display = 'flex';
                         item.style.gap = '10px';
                         item.innerHTML = `
-                            <a href="view.html?id=${video.id}"><img src="${video.thumbnailUrl}" width="120" height="70" style="object-fit: cover;"></a>
-                            <div><a href="view.html?id=${video.id}" style="text-decoration: none; color: black;"><h4 style="margin: 0; font-size: 14px;">${video.title}</h4></a></div>
+                            <a href="view.html?id=${video.id}" onclick="triggerMiniPlayer()"><img src="${video.thumbnailUrl}" width="120" height="70" style="object-fit: cover;"></a>
+                            <div><a href="view.html?id=${video.id}" onclick="triggerMiniPlayer()" style="text-decoration: none; color: black;"><h4 style="margin: 0; font-size: 14px;">${video.title}</h4></a></div>
                         `;
                         sidebar.appendChild(item);
                     }

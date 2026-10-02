@@ -10,6 +10,12 @@
         <a href="index.html">
             <img class="yt" src="yt.png" width="150" height="70" alt="Logo">
         </a>
+        
+        <!-- Search Bar -->
+        <div style="flex: 1; max-width: 500px; margin: 0 20px;">
+            <input type="text" id="searchInput" placeholder="Search videos..." style="width: 100%; padding: 8px 12px; border-radius: 4px; border: none; outline: none;">
+        </div>
+
         <div>
             <span id="userStatus" style="color: white; margin-right: 15px;"></span>
             <a href="upload.html"><button style="padding: 8px 15px; cursor: pointer;">Upload Video</button></a>
@@ -20,6 +26,18 @@
     <div style="padding: 20px;">
         <h2>Recommended Videos</h2>
         <div id="video-grid" style="display: flex; flex-wrap: wrap; gap: 20px;"></div>
+    </div>
+
+    <!-- Mini-Player Container (Bottom Right) -->
+    <div id="miniPlayerContainer" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #111; color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #222;">
+            <span id="miniTitle" style="font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;"></span>
+            <div>
+                <button onclick="expandMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; margin-right: 5px;" title="Expand">🗖</button>
+                <button onclick="closeMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px;" title="Close">✕</button>
+            </div>
+        </div>
+        <video id="miniVideoPlayer" width="100%" height="180" controls autoplay style="display: block;"></video>
     </div>
 
     <script>
@@ -34,32 +52,76 @@
             window.location.reload();
         }
 
+        let allVideos = [];
+
+        // Fetch and display videos
         fetch('/api/videos')
             .then(res => res.json())
             .then(videos => {
-                const grid = document.getElementById('video-grid');
-                if (videos.length === 0) {
-                    grid.innerHTML = '<p>No videos uploaded yet.</p>';
-                    return;
-                }
-
-                videos.forEach(video => {
-                    const uploaderDisplay = (video.uploader === currentUser) 
-                        ? 'By You' 
-                        : `By: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
-
-                    const card = document.createElement('div');
-                    card.style.width = '300px';
-                    card.innerHTML = `
-                        <a href="view.html?id=${video.id}">
-                            <img class="Thumbnail" src="${video.thumbnailUrl}" width="300" height="170">
-                        </a>
-                        <h3 class="Title">${video.title}</h3>
-                        <p style="margin: 5px 0;">${uploaderDisplay}</p>
-                    `;
-                    grid.appendChild(card);
-                });
+                allVideos = videos;
+                renderVideos(videos);
             });
+
+        function renderVideos(videosToRender) {
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = '';
+            if (videosToRender.length === 0) {
+                grid.innerHTML = '<p>No videos found.</p>';
+                return;
+            }
+
+            videosToRender.forEach(video => {
+                const uploaderDisplay = (video.uploader === currentUser) 
+                    ? 'By You' 
+                    : `By: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
+
+                const card = document.createElement('div');
+                card.style.width = '300px';
+                card.innerHTML = `
+                    <a href="view.html?id=${video.id}" onclick="savePlayingState(${video.id}, '${video.title}', '${video.videoUrl}')">
+                        <img class="Thumbnail" src="${video.thumbnailUrl}" width="300" height="170">
+                    </a>
+                    <h3 class="Title">${video.title}</h3>
+                    <p style="margin: 5px 0;">${uploaderDisplay}</p>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        // Search Bar Functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            const filtered = allVideos.filter(v => v.title.toLowerCase().includes(query) || v.uploader.toLowerCase().includes(query));
+            renderVideos(filtered);
+        });
+
+        function savePlayingState(id, title, url) {
+            localStorage.setItem('activeVideo', JSON.stringify({ id, title, url }));
+        }
+
+        // Mini-Player Check on Load
+        const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
+        const miniContainer = document.getElementById('miniPlayerContainer');
+        const miniPlayer = document.getElementById('miniVideoPlayer');
+        const miniTitle = document.getElementById('miniTitle');
+
+        if (activeVideo) {
+            miniContainer.style.display = 'block';
+            miniPlayer.src = activeVideo.url;
+            miniTitle.textContent = activeVideo.title;
+        }
+
+        function closeMiniPlayer() {
+            miniContainer.style.display = 'none';
+            miniPlayer.pause();
+            localStorage.removeItem('activeVideo');
+        }
+
+        function expandMiniPlayer() {
+            if (activeVideo) {
+                window.location.href = `view.html?id=${activeVideo.id}`;
+            }
+        }
     </script>
 </body>
 </html>
