@@ -28,7 +28,8 @@ function loadDatabase() {
     return {
         users: [],         // { username, password }
         videos: [],        // { id, title, videoUrl, thumbnailUrl, uploader, votes: {}, comments: [] }
-        subscriptions: {}  // { username: [list of subscribed channels] }
+        subscriptions: {}, // { username: [list of subscribed channels] }
+        playlists: []      // { id, name, creator, videoIds: [] }
     };
 }
 
@@ -212,6 +213,52 @@ app.get('/api/is-subscribed', (req, res) => {
     const { subscriber, channel } = req.query;
     const isSubscribed = db.subscriptions[subscriber] && db.subscriptions[subscriber].includes(channel);
     res.json({ isSubscribed });
+});
+
+// --- PLAYLIST API ---
+app.get('/api/playlists', (req, res) => {
+    const db = loadDatabase();
+    res.json(db.playlists);
+});
+
+app.get('/api/playlists/:id', (req, res) => {
+    const db = loadDatabase();
+    const playlist = db.playlists.find(p => p.id == req.params.id);
+    if (!playlist) return res.status(404).send('Playlist not found');
+
+    const populatedVideos = playlist.videoIds.map(vId => db.videos.find(v => v.id == vId)).filter(Boolean);
+    res.json({ ...playlist, videos: populatedVideos });
+});
+
+app.post('/api/playlists', (req, res) => {
+    const db = loadDatabase();
+    const { name, username } = req.body;
+    if (!name || !username) return res.status(400).send('Name and username required');
+
+    const newPlaylist = {
+        id: db.playlists.length + 1,
+        name,
+        creator: username,
+        videoIds: []
+    };
+
+    db.playlists.push(newPlaylist);
+    saveDatabase(db);
+    res.json(newPlaylist);
+});
+
+app.post('/api/playlists/:id/add', (req, res) => {
+    const db = loadDatabase();
+    const { videoId } = req.body;
+    const playlist = db.playlists.find(p => p.id == req.params.id);
+
+    if (!playlist) return res.status(404).send('Playlist not found');
+    if (!playlist.videoIds.includes(Number(videoId))) {
+        playlist.videoIds.push(Number(videoId));
+        saveDatabase(db);
+    }
+
+    res.json(playlist);
 });
 
 // --- PAGE ROUTES ---

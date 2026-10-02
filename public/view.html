@@ -8,7 +8,10 @@
 <body>
     <div style="padding: 10px 20px; background: #222; display: flex; justify-content: space-between; align-items: center;">
         <a href="index.html" onclick="triggerMiniPlayer()"><img class="yt" src="yt.png" width="150" height="70"></a>
-        <span id="userStatus" style="color: white;"></span>
+        <div>
+            <a href="playlists.html" style="color: white; margin-right: 20px; text-decoration: underline;">Playlists</a>
+            <span id="userStatus" style="color: white;"></span>
+        </div>
     </div>
 
     <div style="display: flex; padding: 20px; gap: 30px; flex-wrap: wrap;">
@@ -18,9 +21,15 @@
             <h1 id="videoTitle" class="Title" style="margin-top: 10px;">Loading...</h1>
             <p id="uploaderContainer" style="margin: 5px 0;"></p>
             
-            <div style="margin: 15px 0;">
+            <div style="margin: 15px 0; display: flex; gap: 10px; align-items: center;">
                 <button id="likeBtn" style="padding: 8px 15px; cursor: pointer;">👍 <span id="likeCount">0</span></button>
-                <button id="dislikeBtn" style="padding: 8px 15px; cursor: pointer; margin-left: 10px;">👎 <span id="dislikeCount">0</span></button>
+                <button id="dislikeBtn" style="padding: 8px 15px; cursor: pointer;">👎 <span id="dislikeCount">0</span></button>
+                
+                <!-- Add to Playlist Selector -->
+                <select id="playlistSelect" style="padding: 8px;">
+                    <option value="">Add to Playlist...</option>
+                </select>
+                <button onclick="addToPlaylist()" style="padding: 8px 12px; cursor: pointer;">Add</button>
             </div>
 
             <hr style="margin: 20px 0;">
@@ -50,6 +59,9 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         const videoId = urlParams.get('id');
+        const playlistId = urlParams.get('playlistId');
+        const videoIndex = parseInt(urlParams.get('index'));
+
         let currentVideoData = null;
         const videoPlayer = document.getElementById('videoPlayer');
 
@@ -63,13 +75,11 @@
                     document.getElementById('likeCount').textContent = video.likes;
                     document.getElementById('dislikeCount').textContent = video.dislikes;
                     
-                    // Check for existing playback position
                     const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
                     if (activeVideo && activeVideo.id == video.id) {
                         videoPlayer.currentTime = activeVideo.currentTime || 0;
                     }
 
-                    // Continuously save current time
                     videoPlayer.addEventListener('timeupdate', () => {
                         localStorage.setItem('activeVideo', JSON.stringify({ 
                             id: video.id, 
@@ -77,6 +87,21 @@
                             url: video.videoUrl, 
                             currentTime: videoPlayer.currentTime 
                         }));
+                    });
+
+                    // Auto-advance playlist queue on end
+                    videoPlayer.addEventListener('ended', () => {
+                        if (playlistId && !isNaN(videoIndex)) {
+                            fetch(`/api/playlists/${playlistId}`)
+                                .then(res => res.json())
+                                .then(playlist => {
+                                    const nextIndex = videoIndex + 1;
+                                    if (playlist.videoIds[nextIndex]) {
+                                        const nextVideoId = playlist.videoIds[nextIndex];
+                                        window.location.href = `view.html?id=${nextVideoId}&playlistId=${playlistId}&index=${nextIndex}`;
+                                    }
+                                });
+                        }
                     });
 
                     const uploaderElement = document.getElementById('uploaderContainer');
@@ -88,6 +113,23 @@
 
                     renderComments(video.comments);
                 });
+
+            // Load user playlists for dropdown
+            if (currentUser !== 'Guest') {
+                fetch('/api/playlists')
+                    .then(res => res.json())
+                    .then(playlists => {
+                        const select = document.getElementById('playlistSelect');
+                        playlists.forEach(p => {
+                            if (p.creator === currentUser) {
+                                const opt = document.createElement('option');
+                                opt.value = p.id;
+                                opt.textContent = p.name;
+                                select.appendChild(opt);
+                            }
+                        });
+                    });
+            }
 
             function sendVote(type) {
                 if (currentUser === 'Guest') {
@@ -131,6 +173,22 @@
                     document.getElementById('commentInput').value = '';
                 });
             });
+        }
+
+        function addToPlaylist() {
+            const selectedPlaylistId = document.getElementById('playlistSelect').value;
+            if (!selectedPlaylistId) {
+                alert('Please select a playlist.');
+                return;
+            }
+
+            fetch(`/api/playlists/${selectedPlaylistId}/add`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ videoId })
+            })
+            .then(res => res.json())
+            .then(() => alert('Added to playlist successfully!'));
         }
 
         function triggerMiniPlayer() {

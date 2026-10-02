@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Playlists - JabbaTube</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="font-family: Arial, sans-serif; padding: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #222; padding: 10px 20px;">
+        <a href="index.html"><img src="yt.png" width="120"></a>
+        <span id="userStatus" style="color: white;"></span>
+    </div>
+
+    <div style="max-width: 800px; margin: 20px auto;">
+        <h2>Playlists</h2>
+        
+        <!-- Create Playlist Form -->
+        <div style="background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
+            <h3>Create a New Playlist</h3>
+            <form id="createPlaylistForm">
+                <input type="text" id="playlistName" placeholder="Playlist Name..." required style="padding: 8px; width: 60%;">
+                <button type="submit" style="padding: 8px 15px; cursor: pointer;">Create</button>
+            </form>
+        </div>
+
+        <!-- Playlists List -->
+        <div id="playlistsContainer"></div>
+
+        <!-- Single Playlist View -->
+        <div id="singlePlaylistView" style="display: none;">
+            <button onclick="backToList()" style="margin-bottom: 15px; cursor: pointer;">← Back to Playlists</button>
+            <h2 id="playlistTitle"></h2>
+            <p>Created by: <span id="playlistCreator"></span></p>
+            <div id="playlistVideos" style="display: flex; flex-direction: column; gap: 15px;"></div>
+        </div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            alert('Please login first!');
+            window.location.href = 'login.html';
+        }
+        document.getElementById('userStatus').innerHTML = `User: <strong>${currentUser}</strong>`;
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const playlistId = urlParams.get('id');
+
+        if (playlistId) {
+            loadSinglePlaylist(playlistId);
+        } else {
+            loadAllPlaylists();
+        }
+
+        document.getElementById('createPlaylistForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('playlistName').value;
+
+            fetch('/api/playlists', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, username: currentUser })
+            })
+            .then(res => res.json())
+            .then(() => {
+                document.getElementById('playlistName').value = '';
+                loadAllPlaylists();
+            });
+        });
+
+        function loadAllPlaylists() {
+            fetch('/api/playlists')
+                .then(res => res.json())
+                .then(playlists => {
+                    const container = document.getElementById('playlistsContainer');
+                    container.innerHTML = '';
+                    if (playlists.length === 0) {
+                        container.innerHTML = '<p>No playlists found.</p>';
+                        return;
+                    }
+                    playlists.forEach(p => {
+                        const div = document.createElement('div');
+                        div.style.background = '#eee';
+                        div.style.padding = '15px';
+                        div.style.borderRadius = '6px';
+                        div.style.marginBottom = '10px';
+                        div.innerHTML = `
+                            <h3><a href="playlists.html?id=${p.id}">${p.name}</a></h3>
+                            <p style="margin: 0; font-size: 13px; color: gray;">Creator: ${p.creator} | Videos: ${p.videoIds.length}</p>
+                        `;
+                        container.appendChild(div);
+                    });
+                });
+        }
+
+        function loadSinglePlaylist(id) {
+            document.getElementById('createPlaylistForm').parentElement.style.display = 'none';
+            document.getElementById('playlistsContainer').style.display = 'none';
+            document.getElementById('singlePlaylistView').style.display = 'block';
+
+            fetch(`/api/playlists/${id}`)
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById('playlistTitle').textContent = data.name;
+                    document.getElementById('playlistCreator').textContent = data.creator;
+                    
+                    const container = document.getElementById('playlistVideos');
+                    container.innerHTML = '';
+                    if (data.videos.length === 0) {
+                        container.innerHTML = '<p>This playlist is empty.</p>';
+                        return;
+                    }
+
+                    data.videos.forEach((v, index) => {
+                        const item = document.createElement('div');
+                        item.style.display = 'flex';
+                        item.style.gap = '15px';
+                        item.style.alignItems = 'center';
+                        item.style.background = '#f1f1f1';
+                        item.style.padding = '10px';
+                        item.style.borderRadius = '4px';
+                        item.innerHTML = `
+                            <span>#${index + 1}</span>
+                            <a href="view.html?id=${v.id}&playlistId=${id}&index=${index}"><img src="${v.thumbnailUrl}" width="120" height="70" style="object-fit: cover;"></a>
+                            <div>
+                                <a href="view.html?id=${v.id}&playlistId=${id}&index=${index}" style="text-decoration: none; color: black; font-weight: bold;">${v.title}</a>
+                                <p style="margin: 5px 0; font-size: 12px; color: gray;">By ${v.uploader}</p>
+                            </div>
+                        `;
+                        container.appendChild(item);
+                    });
+                });
+        }
+
+        function backToList() {
+            window.location.href = 'playlists.html';
+        }
+    </script>
+</body>
+</html>
