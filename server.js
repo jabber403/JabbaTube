@@ -4,7 +4,7 @@ const path = require('path');
 const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
@@ -184,5 +184,5 @@ app.get('/upload', (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`YouTube server running at http://localhost:${PORT}`);
+    console.log(`YouTube server running on port ${PORT}`);
 });
