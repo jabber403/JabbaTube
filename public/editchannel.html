@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Channel - JabbaTube</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center; color: white;">
+        <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
+        <div>
+            <a href="channel.html" id="backToChannel" style="color: white; text-decoration: underline;">Back to Channel</a>
+        </div>
+    </div>
+
+    <div style="max-width: 600px; margin: 30px auto; padding: 25px; background: #fff; border-radius: 8px; border: 1px solid #ddd;">
+        <h2>Customize Your Channel</h2>
+        <form id="editForm" style="display: flex; flex-direction: column; gap: 15px;">
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Channel Bio</label>
+                <textarea id="bioInput" rows="4" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Profile Picture (PFP)</label>
+                <input type="file" id="pfpFileInput" accept="image/*" style="width: 100%;">
+            </div>
+            <div>
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Channel Banner</label>
+                <input type="file" id="bannerFileInput" accept="image/*" style="width: 100%;">
+            </div>
+            <button type="submit" style="padding: 12px; background: #cc0000; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">Save Changes</button>
+        </form>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            alert('Please login first!');
+            window.location.href = 'login.html';
+        }
+        document.getElementById('backToChannel').href = `channel.html?name=${currentUser}`;
+
+        fetch(`/api/users/${currentUser}`)
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById('bioInput').value = data.bio || '';
+            });
+
+        document.getElementById('editForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const bio = document.getElementById('bioInput').value;
+            const pfpFile = document.getElementById('pfpFileInput').files[0];
+            const bannerFile = document.getElementById('bannerFileInput').files[0];
+
+            const formData = new FormData();
+            formData.append('username', currentUser);
+            formData.append('bio', bio);
+            if (pfpFile) formData.append('pfpFile', pfpFile);
+            if (bannerFile) formData.append('bannerFile', bannerFile);
+
+            fetch('/api/channel/update', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Channel updated successfully!');
+                    window.location.href = `channel.html?name=${currentUser}`;
+                } else {
+                    alert('Failed to update channel.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

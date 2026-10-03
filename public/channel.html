@@ -6,27 +6,34 @@
     <title>Channel - JabbaTube</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f9f9f9;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center; color: white;">
         <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
-        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
-            <a href="analytics.html" style="color: white; text-decoration: underline;">Analytics</a>
-            <a href="playlists.html" style="color: white; text-decoration: underline;">Playlists</a>
-            <span id="userStatus" style="color: white; font-size: 14px;"></span>
+        <div>
+            <a href="analytics.html" style="color: white; margin-right: 15px; text-decoration: underline;">Analytics</a>
+            <a href="shorts.html" style="color: white; margin-right: 15px; text-decoration: underline;">Shorts</a>
+            <span id="userStatus"></span>
         </div>
     </div>
 
-    <div style="max-width: 800px; margin: 30px auto; padding: 20px;">
-        <div style="display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd; flex-wrap: wrap; gap: 15px;">
-            <div>
-                <h1 id="channelName" style="margin: 0 0 10px 0;">Channel</h1>
-                <p style="margin: 0; color: #555;">Subscribers: <strong id="channelSubCount">0</strong></p>
+    <!-- Channel Banner -->
+    <div id="bannerContainer" style="width: 100%; height: 200px; background: #333; background-size: cover; background-position: center;"></div>
+
+    <div style="max-width: 900px; margin: -40px auto 30px auto; padding: 0 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; background: #fff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; flex-wrap: wrap; gap: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+            <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                <img id="pfpImg" src="https://via.placeholder.com/90" width="90" height="90" style="border-radius: 50%; object-fit: cover; border: 3px solid white; background: #ccc; margin-top: -30px;">
+                <div>
+                    <h1 id="channelName" style="margin: 0 0 5px 0; font-size: 24px;">Channel</h1>
+                    <p style="margin: 0 0 8px 0; color: #555; font-size: 14px;">Subscribers: <strong id="channelSubCount">0</strong></p>
+                    <p id="channelBio" style="margin: 0; color: #666; font-size: 13px; max-width: 400px;"></p>
+                </div>
             </div>
             <div id="channelActionContainer"></div>
         </div>
 
         <h2 style="margin-top: 30px;">Uploads</h2>
-        <div id="channelVideos" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px;"></div>
+        <div id="channelVideos" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin-top: 15px;"></div>
     </div>
 
     <script>
@@ -38,22 +45,24 @@
         }
 
         const urlParams = new URLSearchParams(window.location.search);
-        const channelName = urlParams.get('name');
+        const channelName = urlParams.get('name') || currentUser;
 
-        if (channelName) {
-            document.getElementById('channelName').textContent = `${channelName}'s Channel`;
+        if (channelName && channelName !== 'Guest') {
+            document.getElementById('channelName').textContent = channelName;
 
             fetch(`/api/users/${channelName}`)
                 .then(res => res.json())
-                .then(data => {
-                    const subCount = data.subscribers.length;
-                    const isSubscribed = data.subscribers.includes(currentUser);
-                    document.getElementById('channelSubCount').textContent = subCount;
+                .then(user => {
+                    document.getElementById('channelSubCount').textContent = user.subscribers.length;
+                    document.getElementById('channelBio').textContent = user.bio || 'No bio provided.';
+                    if (user.pfp) document.getElementById('pfpImg').src = user.pfp;
+                    if (user.banner) document.getElementById('bannerContainer').style.backgroundImage = `url('${user.banner}')`;
 
                     const actionContainer = document.getElementById('channelActionContainer');
                     if (channelName === currentUser) {
-                        actionContainer.innerHTML = `<a href="analytics.html" style="padding: 8px 15px; background: #222; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">View Analytics</a>`;
+                        actionContainer.innerHTML = `<a href="editchannel.html" style="padding: 8px 16px; background: #222; color: white; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 14px;">Edit Channel</a>`;
                     } else {
+                        const isSubscribed = user.subscribers.includes(currentUser);
                         const btn = document.createElement('button');
                         btn.style.padding = '8px 16px';
                         btn.style.background = isSubscribed ? '#666' : '#cc0000';
@@ -62,11 +71,11 @@
                         btn.style.borderRadius = '4px';
                         btn.style.cursor = 'pointer';
                         btn.style.fontWeight = 'bold';
-                        btn.textContent = isSubscribed ? `Subscribed (${subCount})` : `Subscribe (${subCount})`;
+                        btn.textContent = isSubscribed ? `Subscribed (${user.subscribers.length})` : `Subscribe (${user.subscribers.length})`;
 
                         btn.onclick = () => {
                             if (currentUser === 'Guest') {
-                                alert('Please login first to subscribe!');
+                                alert('Please login first!');
                                 window.location.href = 'login.html';
                                 return;
                             }
@@ -96,10 +105,10 @@
                 .then(res => res.json())
                 .then(videos => {
                     const grid = document.getElementById('channelVideos');
-                    const userVideos = videos.filter(v => v.uploader === channelName);
+                    const userVideos = videos.filter(v => v.uploader === channelName && !v.isShort);
                     
                     if (userVideos.length === 0) {
-                        grid.innerHTML = '<p style="color: gray;">No videos uploaded yet.</p>';
+                        grid.innerHTML = '<p style="color: gray;">No standard videos uploaded yet.</p>';
                         return;
                     }
 

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JabbaTube Shorts</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; background: #000; color: white; overflow-x: hidden;">
+    <div style="position: fixed; top: 0; left: 0; width: 100%; padding: 10px 20px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; z-index: 100;">
+        <a href="index.html"><img src="yt.png" width="100" style="object-fit: contain;"></a>
+        <h2 style="margin: 0; font-size: 18px;">Shorts</h2>
+        <a href="upload.html" style="color: white; text-decoration: underline; font-size: 14px;">Upload Short</a>
+    </div>
+
+    <div id="shortsContainer" style="display: flex; flex-direction: column; align-items: center; padding-top: 60px; scroll-snap-type: y mandatory; height: 100vh; overflow-y: scroll;">
+        <p style="margin-top: 50px; color: gray;">Loading Shorts...</p>
+    </div>
+
+    <script>
+        fetch('/api/videos')
+            .then(res => res.json())
+            .then(videos => {
+                const container = document.getElementById('shortsContainer');
+                const shorts = videos.filter(v => v.isShort);
+
+                if (shorts.length === 0) {
+                    container.innerHTML = '<p style="margin-top: 100px; color: gray;">No shorts available yet. Upload one and check "Shorts"!</p>';
+                    return;
+                }
+
+                container.innerHTML = '';
+                shorts.forEach(short => {
+                    const card = document.createElement('div');
+                    card.style.cssText = 'width: 100%; max-width: 400px; height: calc(100vh - 60px); scroll-snap-align: start; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding: 10px; box-sizing: border-box;';
+                    card.innerHTML = `
+                        <video src="${short.videoUrl}" controls autoplay loop playsinline webkit-playsinline style="width: 100%; max-height: 75vh; background: black; border-radius: 12px; object-fit: cover;"></video>
+                        <div style="width: 100%; max-width: 400px; padding: 10px 0;">
+                            <h3 style="margin: 0 0 5px 0; font-size: 16px;">${short.title}</h3>
+                            <p style="margin: 0; font-size: 13px; color: #aaa;">By: <a href="channel.html?name=${short.uploader}" style="color: #fff; text-decoration: underline;">${short.uploader}</a> | 👍 ${short.likes} Likes</p>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                });
+            });
+    </script>
+</body>
+</html>

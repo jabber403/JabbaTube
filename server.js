@@ -28,11 +28,11 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-let users = []; // { username, password, subscribers: [] }
-let videos = []; 
+let users = []; // { username, password, subscribers: [], bio: '', pfp: '', banner: '' }
+let videos = []; // { id, title, videoUrl, thumbnailUrl, uploader, isShort, likes, dislikes, comments }
 let playlists = []; 
 
-// --- AUTH ROUTES ---
+// --- AUTH & USER ROUTES ---
 app.post('/api/signup', (req, res) => {
     const { username, password } = req.body;
     if (!username || !password) return res.status(400).json({ error: 'Username and password required' });
@@ -40,7 +40,7 @@ app.post('/api/signup', (req, res) => {
     const existing = users.find(u => u.username === username);
     if (existing) return res.status(400).json({ error: 'User already exists' });
 
-    users.push({ username, password, subscribers: [] });
+    users.push({ username, password, subscribers: [], bio: 'Welcome to my JabbaTube channel!', pfp: '', banner: '' });
     res.json({ success: true, username });
 });
 
@@ -52,20 +52,42 @@ app.post('/api/login', (req, res) => {
     res.json({ success: true, username });
 });
 
-// --- SUBSCRIPTION ROUTES ---
 app.get('/api/users/:username', (req, res) => {
     const user = users.find(u => u.username === req.params.username);
-    const subscribers = user ? (user.subscribers || []) : [];
-    res.json({ username: req.params.username, subscribers });
+    if (!user) return res.json({ username: req.params.username, subscribers: [], bio: '', pfp: '', banner: '' });
+    res.json({ 
+        username: user.username, 
+        subscribers: user.subscribers || [], 
+        bio: user.bio || '', 
+        pfp: user.pfp || '', 
+        banner: user.banner || '' 
+    });
 });
 
+app.post('/api/channel/update', upload.fields([{ name: 'pfpFile', maxCount: 1 }, { name: 'bannerFile', maxCount: 1 }]), (req, res) => {
+    const { username, bio } = req.body;
+    let user = users.find(u => u.username === username);
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    if (bio !== undefined) user.bio = bio;
+    if (req.files && req.files['pfpFile']) {
+        user.pfp = `/uploads/${req.files['pfpFile'][0].filename}`;
+    }
+    if (req.files && req.files['bannerFile']) {
+        user.banner = `/uploads/${req.files['bannerFile'][0].filename}`;
+    }
+
+    res.json({ success: true, user: { username: user.username, bio: user.bio, pfp: user.pfp, banner: user.banner } });
+});
+
+// --- SUBSCRIPTION ROUTES ---
 app.post('/api/subscribe', (req, res) => {
     const { username, subscriber } = req.body;
     if (username === subscriber) return res.status(400).json({ error: "Cannot subscribe to yourself" });
 
     let user = users.find(u => u.username === username);
     if (!user) {
-        user = { username, password: '', subscribers: [] };
+        user = { username, password: '', subscribers: [], bio: '', pfp: '', banner: '' };
         users.push(user);
     }
 
@@ -94,7 +116,7 @@ app.get('/api/videos/:id', (req, res) => {
 
 app.post('/api/videos', upload.fields([{ name: 'videoFile', maxCount: 1 }, { name: 'thumbnailFile', maxCount: 1 }]), (req, res) => {
     try {
-        const { title, uploader } = req.body;
+        const { title, uploader, isShort } = req.body;
         const videoFile = req.files && req.files['videoFile'] ? `/uploads/${req.files['videoFile'][0].filename}` : '';
         const thumbnailFile = req.files && req.files['thumbnailFile'] ? `/uploads/${req.files['thumbnailFile'][0].filename}` : '';
 
@@ -104,6 +126,7 @@ app.post('/api/videos', upload.fields([{ name: 'videoFile', maxCount: 1 }, { nam
             videoUrl: videoFile,
             thumbnailUrl: thumbnailFile,
             uploader: uploader || 'Guest',
+            isShort: isShort === 'true' || isShort === true,
             likes: 0,
             dislikes: 0,
             comments: []
@@ -117,7 +140,6 @@ app.post('/api/videos', upload.fields([{ name: 'videoFile', maxCount: 1 }, { nam
     }
 });
 
-// --- INTERACTIONS (Likes, Comments) ---
 app.post('/api/videos/:id/vote', (req, res) => {
     const { type } = req.body;
     const video = videos.find(v => v.id == req.params.id);
