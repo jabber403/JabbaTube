@@ -29,8 +29,15 @@
         <!-- Single Playlist View -->
         <div id="singlePlaylistView" style="display: none;">
             <button onclick="backToList()" style="margin-bottom: 15px; cursor: pointer;">← Back to Playlists</button>
-            <h2 id="playlistTitle"></h2>
-            <p>Created by: <span id="playlistCreator"></span></p>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div>
+                    <h2 id="playlistTitle" style="margin: 0;"></h2>
+                    <p style="margin: 5px 0; color: gray;">Created by: <span id="playlistCreator"></span></p>
+                </div>
+                <!-- Play All Button -->
+                <button id="playAllBtn" style="padding: 10px 20px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">▶ Play All</button>
+            </div>
+            <hr style="margin: 15px 0;">
             <div id="playlistVideos" style="display: flex; flex-direction: column; gap: 15px;"></div>
         </div>
     </div>
@@ -108,8 +115,15 @@
                     container.innerHTML = '';
                     if (data.videos.length === 0) {
                         container.innerHTML = '<p>This playlist is empty.</p>';
+                        document.getElementById('playAllBtn').style.display = 'none';
                         return;
                     }
+
+                    // Setup Play All Action starting at index 0
+                    document.getElementById('playAllBtn').onclick = function() {
+                        const firstVideo = data.videos[0];
+                        window.location.href = `view.html?id=${firstVideo.id}&playlistId=${id}&index=0`;
+                    };
 
                     data.videos.forEach((v, index) => {
                         const item = document.createElement('div');
