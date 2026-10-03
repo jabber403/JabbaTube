@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JabbaTube Shorts Studio</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; background: #121212; color: white;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center;">
+        <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
+        <a href="shorts.html" style="color: white; text-decoration: underline;">Back to Shorts</a>
+    </div>
+
+    <div style="max-width: 450px; margin: 30px auto; padding: 20px; background: #1e1e1e; border-radius: 10px; border: 1px solid #333; text-align: center;">
+        <h2>Shorts Studio</h2>
+        <p style="color: #aaa; font-size: 13px;">Record or upload your short-form video</p>
+
+        <!-- Camera Preview Container -->
+        <div style="position: relative; width: 100%; height: 350px; background: black; border-radius: 8px; overflow: hidden; margin-bottom: 15px; display: flex; justify-content: center; align-items: center;">
+            <video id="cameraPreview" autoplay playsinline muted style="width: 100%; height: 100%; object-fit: cover; display: none;"></video>
+            <video id="recordedPreview" controls playsinline style="width: 100%; height: 100%; object-fit: cover; display: none;"></video>
+            <div id="cameraPlaceholder" style="color: #666;">Camera preview will appear here</div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 15px;">
+            <button id="startCamBtn" style="padding: 8px 14px; background: #444; color: white; border: none; border-radius: 4px; cursor: pointer;">Turn on Camera</button>
+            <button id="recordBtn" disabled style="padding: 8px 14px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; opacity: 0.5;">Start Recording</button>
+            <button id="stopBtn" disabled style="padding: 8px 14px; background: #555; color: white; border: none; border-radius: 4px; cursor: pointer; opacity: 0.5;">Stop</button>
+        </div>
+
+        <hr style="border-color: #333; margin: 20px 0;">
+
+        <!-- Upload Form for Recorded / File Short -->
+        <form id="shortStudioForm" style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+            <div>
+                <label style="display: block; font-size: 13px; margin-bottom: 4px;">Short Title</label>
+                <input type="text" id="shortTitle" placeholder="Enter title..." required style="width: 100%; padding: 8px; box-sizing: border-box; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px;">
+            </div>
+            <div>
+                <label style="display: block; font-size: 13px; margin-bottom: 4px;">Or Upload Video File</label>
+                <input type="file" id="shortFile" accept="video/*" style="width: 100%; font-size: 12px;">
+            </div>
+            <button type="submit" style="padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; margin-top: 10px;">Publish Short</button>
+        </form>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            alert('Please login first!');
+            window.location.href = 'login.html';
+        }
+
+        let mediaRecorder;
+        let recordedChunks = [];
+        let recordedBlob = null;
+
+        const cameraPreview = document.getElementById('cameraPreview');
+        const recordedPreview = document.getElementById('recordedPreview');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const startCamBtn = document.getElementById('startCamBtn');
+        const recordBtn = document.getElementById('recordBtn');
+        const stopBtn = document.getElementById('stopBtn');
+
+        startCamBtn.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: true });
+                cameraPreview.srcObject = stream;
+                cameraPreview.style.display = 'block';
+                cameraPlaceholder.style.display = 'none';
+                recordedPreview.style.display = 'none';
+
+                mediaRecorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+                mediaRecorder.ondataavailable = (e) => {
+                    if (e.data.size > 0) recordedChunks.push(e.data);
+                };
+                mediaRecorder.onstop = () => {
+                    recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                    const videoURL = URL.createObjectURL(recordedBlob);
+                    recordedPreview.src = videoURL;
+                    cameraPreview.style.display = 'none';
+                    recordedPreview.style.display = 'block';
+                };
+
+                recordBtn.disabled = false;
+                recordBtn.style.opacity = '1';
+                startCamBtn.disabled = true;
+                startCamBtn.style.opacity = '0.5';
+            } catch (err) {
+                alert('Could not access camera/microphone.');
+                console.error(err);
+            }
+        };
+
+        recordBtn.onclick = () => {
+            recordedChunks = [];
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            recordBtn.style.opacity = '0.5';
+            stopBtn.disabled = false;
+            stopBtn.style.opacity = '1';
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            stopBtn.disabled = true;
+            stopBtn.style.opacity = '0.5';
+        };
+
+        document.getElementById('shortStudioForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = document.getElementById('shortTitle').value;
+            const fileInput = document.getElementById('shortFile').files[0];
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('uploader', currentUser);
+            formData.append('isShort', 'true');
+
+            if (recordedBlob) {
+                formData.append('videoFile', recordedBlob, 'short.webm');
+                formData.append('thumbnailFile', recordedBlob, 'thumb.webm'); // placeholder thumb
+            } else if (fileInput) {
+                formData.append('videoFile', fileInput);
+                formData.append('thumbnailFile', fileInput);
+            } else {
+                alert('Please record a short or select a video file first!');
+                return;
+            }
+
+            fetch('/api/videos', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.id) {
+                    alert('Short published successfully!');
+                    window.location.href = 'shorts.html';
+                } else {
+                    alert('Upload failed.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

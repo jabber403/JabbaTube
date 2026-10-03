@@ -6,15 +6,17 @@
     <title>JabbaTube Shorts</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="font-family: Arial, sans-serif; margin: 0; background: #000; color: white; overflow-x: hidden;">
-    <div style="position: fixed; top: 0; left: 0; width: 100%; padding: 10px 20px; background: rgba(0,0,0,0.8); display: flex; justify-content: space-between; align-items: center; z-index: 100;">
-        <a href="index.html"><img src="yt.png" width="100" style="object-fit: contain;"></a>
-        <h2 style="margin: 0; font-size: 18px;">Shorts</h2>
-        <a href="upload.html" style="color: white; text-decoration: underline; font-size: 14px;">Upload Short</a>
+<body style="font-family: Arial, sans-serif; margin: 0; background: #000; color: white; overflow: hidden;">
+    <!-- Top Navigation Overlay -->
+    <div style="position: fixed; top: 0; left: 0; width: 100%; padding: 12px 20px; background: rgba(0,0,0,0.6); display: flex; justify-content: space-between; align-items: center; z-index: 100; box-sizing: border-box;">
+        <a href="index.html"><img src="yt.png" width="90" style="object-fit: contain;"></a>
+        <h2 style="margin: 0; font-size: 16px; letter-spacing: 1px;">Shorts</h2>
+        <a href="studio.html" style="color: white; text-decoration: none; font-size: 13px; background: #cc0000; padding: 6px 12px; border-radius: 4px; font-weight: bold;">Create Short</a>
     </div>
 
-    <div id="shortsContainer" style="display: flex; flex-direction: column; align-items: center; padding-top: 60px; scroll-snap-type: y mandatory; height: 100vh; overflow-y: scroll;">
-        <p style="margin-top: 50px; color: gray;">Loading Shorts...</p>
+    <!-- Fullscreen Vertical Scroll Feed Container -->
+    <div id="shortsContainer" style="height: 100vh; overflow-y: scroll; scroll-snap-type: y mandatory; text-align: center; background: #111;">
+        <p style="margin-top: 100px; color: gray; font-size: 14px;">Loading Shorts...</p>
     </div>
 
     <script>
@@ -25,24 +27,46 @@
                 const shorts = videos.filter(v => v.isShort);
 
                 if (shorts.length === 0) {
-                    container.innerHTML = '<p style="margin-top: 100px; color: gray;">No shorts available yet. Upload one and check "Shorts"!</p>';
+                    container.innerHTML = '<div style="display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh;"><p style="color: gray; margin-bottom: 10px;">No shorts available yet.</p><a href="studio.html" style="color: #3ea6ff; text-decoration: underline;">Record or upload the first short!</a></div>';
                     return;
                 }
 
                 container.innerHTML = '';
                 shorts.forEach(short => {
                     const card = document.createElement('div');
-                    card.style.cssText = 'width: 100%; max-width: 400px; height: calc(100vh - 60px); scroll-snap-align: start; display: flex; flex-direction: column; justify-content: center; align-items: center; position: relative; padding: 10px; box-sizing: border-box;';
+                    card.style.cssText = 'width: 100%; height: 100vh; scroll-snap-align: start; display: flex; justify-content: center; align-items: center; position: relative; background: #000;';
+
                     card.innerHTML = `
-                        <video src="${short.videoUrl}" controls autoplay loop playsinline webkit-playsinline style="width: 100%; max-height: 75vh; background: black; border-radius: 12px; object-fit: cover;"></video>
-                        <div style="width: 100%; max-width: 400px; padding: 10px 0;">
-                            <h3 style="margin: 0 0 5px 0; font-size: 16px;">${short.title}</h3>
-                            <p style="margin: 0; font-size: 13px; color: #aaa;">By: <a href="channel.html?name=${short.uploader}" style="color: #fff; text-decoration: underline;">${short.uploader}</a> | 👍 ${short.likes} Likes</p>
+                        <div style="position: relative; width: 100%; max-width: 380px; height: 85vh; display: flex; justify-content: center; align-items: center; background: #222; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.5);">
+                            <video src="${short.videoUrl}" controls autoplay loop playsinline webkit-playsinline style="width: 100%; height: 100%; object-fit: cover; background: black;"></video>
+                            
+                            <!-- Video Metadata Overlay -->
+                            <div style="position: absolute; bottom: 20px; left: 15px; right: 15px; text-align: left; background: linear-gradient(transparent, rgba(0,0,0,0.8)); padding: 15px 10px 5px 10px; border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;">
+                                <h3 style="margin: 0 0 6px 0; font-size: 15px; text-shadow: 1px 1px 3px rgba(0,0,0,0.8);">${short.title}</h3>
+                                <p style="margin: 0 0 8px 0; font-size: 13px; color: #ddd;">
+                                    By: <a href="channel.html?name=${short.uploader}" style="color: #fff; font-weight: bold; text-decoration: underline;">${short.uploader}</a>
+                                </p>
+                                <button onclick="likeShort(${short.id}, this)" style="background: rgba(255,255,255,0.2); border: none; color: white; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: bold;">
+                                    👍 <span id="likes-${short.id}">${short.likes}</span> Likes
+                                </button>
+                            </div>
                         </div>
                     `;
                     container.appendChild(card);
                 });
             });
+
+        function likeShort(id, btn) {
+            fetch(`/api/videos/${id}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ type: 'like' })
+            })
+            .then(res => res.json())
+            .then(data => {
+                document.getElementById(`likes-${id}`).textContent = data.likes;
+            });
+        }
     </script>
 </body>
 </html>
