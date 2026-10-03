@@ -11,12 +11,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
 
-// Ensure uploads folder exists so it doesn't crash on boot or after a wipe
 if (!fs.existsSync('uploads')) {
     fs.mkdirSync('uploads', { recursive: true });
 }
 
-// Multer storage setup for video and thumbnail files
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         if (!fs.existsSync('uploads')) {
@@ -30,8 +28,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// In-memory data stores
-let users = []; 
+let users = []; // { username, password, subscribers: [] }
 let videos = []; 
 let playlists = []; 
 
@@ -43,7 +40,7 @@ app.post('/api/signup', (req, res) => {
     const existing = users.find(u => u.username === username);
     if (existing) return res.status(400).json({ error: 'User already exists' });
 
-    users.push({ username, password });
+    users.push({ username, password, subscribers: [] });
     res.json({ success: true, username });
 });
 
@@ -55,6 +52,37 @@ app.post('/api/login', (req, res) => {
     res.json({ success: true, username });
 });
 
+// --- SUBSCRIPTION ROUTES ---
+app.get('/api/users/:username', (req, res) => {
+    const user = users.find(u => u.username === req.params.username);
+    const subscribers = user ? (user.subscribers || []) : [];
+    res.json({ username: req.params.username, subscribers });
+});
+
+app.post('/api/subscribe', (req, res) => {
+    const { username, subscriber } = req.body;
+    if (username === subscriber) return res.status(400).json({ error: "Cannot subscribe to yourself" });
+
+    let user = users.find(u => u.username === username);
+    if (!user) {
+        user = { username, password: '', subscribers: [] };
+        users.push(user);
+    }
+
+    if (!user.subscribers) user.subscribers = [];
+
+    const index = user.subscribers.indexOf(subscriber);
+    let isSubscribed = false;
+    if (index > -1) {
+        user.subscribers.splice(index, 1);
+    } else {
+        user.subscribers.push(subscriber);
+        isSubscribed = true;
+    }
+
+    res.json({ subscribersCount: user.subscribers.length, isSubscribed });
+});
+
 // --- VIDEO ROUTES ---
 app.get('/api/videos', (req, res) => res.json(videos));
 
@@ -64,7 +92,6 @@ app.get('/api/videos/:id', (req, res) => {
     res.json(video);
 });
 
-// Upload video with actual file attachments using Multer
 app.post('/api/videos', upload.fields([{ name: 'videoFile', maxCount: 1 }, { name: 'thumbnailFile', maxCount: 1 }]), (req, res) => {
     try {
         const { title, uploader } = req.body;

@@ -18,10 +18,11 @@
     <div style="display: flex; padding: 15px; gap: 20px; flex-wrap: wrap;">
         <!-- Left Column: Video, Details, Likes, Comments -->
         <div style="flex: 2; min-width: 300px; width: 100%;">
-            <!-- Added playsinline and webkit-playsinline to prevent automatic fullscreen on mobile -->
             <video id="videoPlayer" class="Video" controls autoplay playsinline webkit-playsinline width="100%" style="max-height: 450px; background: black; border-radius: 6px;"></video>
             <h1 id="videoTitle" class="Title" style="font-size: 20px; margin-top: 10px;">Loading...</h1>
-            <p id="uploaderContainer" style="margin: 5px 0; color: gray;"></p>
+            
+            <!-- Uploader & Subscribe Button Row -->
+            <div id="uploaderContainer" style="margin: 10px 0; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; color: gray;"></div>
             
             <div style="margin: 15px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                 <button id="likeBtn" style="padding: 8px 12px; cursor: pointer;">👍 <span id="likeCount">0</span></button>
@@ -77,7 +78,6 @@
         const videoPlayer = document.getElementById('videoPlayer');
         let nextVideoUrlToPlay = null;
 
-        // Automatically request landscape orientation when user enters full screen
         videoPlayer.addEventListener('fullscreenchange', () => {
             if (document.fullscreenElement === videoPlayer) {
                 if (screen.orientation && screen.orientation.lock) {
@@ -136,9 +136,52 @@
 
                     const uploaderElement = document.getElementById('uploaderContainer');
                     if (video.uploader === currentUser) {
-                        uploaderElement.innerHTML = 'Uploaded by: <strong>You</strong>';
+                        uploaderElement.innerHTML = `Uploaded by: <strong>You</strong>`;
                     } else {
-                        uploaderElement.innerHTML = `Uploaded by: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
+                        uploaderElement.innerHTML = `
+                            <span>Uploaded by: <a href="channel.html?name=${video.uploader}">${video.uploader}</a></span>
+                            <button id="subscribeBtn" style="padding: 6px 14px; background: #cc0000; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Subscribe (<span id="subCount">0</span>)</button>
+                        `;
+
+                        // Fetch subscriber details and setup subscribe handler
+                        fetch(`/api/users/${video.uploader}`)
+                            .then(res => res.json())
+                            .then(data => {
+                                const subCount = data.subscribers.length;
+                                const isSubscribed = data.subscribers.includes(currentUser);
+                                const btn = document.getElementById('subscribeBtn');
+                                document.getElementById('subCount').textContent = subCount;
+
+                                if (isSubscribed) {
+                                    btn.textContent = `Subscribed (${subCount})`;
+                                    btn.style.background = '#666';
+                                }
+
+                                btn.onclick = () => {
+                                    if (currentUser === 'Guest') {
+                                        alert('Please login first to subscribe!');
+                                        window.location.href = 'login.html';
+                                        return;
+                                    }
+
+                                    fetch('/api/subscribe', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ username: video.uploader, subscriber: currentUser })
+                                    })
+                                    .then(res => res.json())
+                                    .then(result => {
+                                        document.getElementById('subCount').textContent = result.subscribersCount;
+                                        if (result.isSubscribed) {
+                                            btn.textContent = `Subscribed (${result.subscribersCount})`;
+                                            btn.style.background = '#666';
+                                        } else {
+                                            btn.textContent = `Subscribe (${result.subscribersCount})`;
+                                            btn.style.background = '#cc0000';
+                                        }
+                                    });
+                                };
+                            });
                     }
 
                     renderComments(video.comments);
