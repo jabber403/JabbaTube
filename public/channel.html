@@ -7,50 +7,114 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
-    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
         <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
-        <span id="userStatus" style="color: white; font-size: 14px;"></span>
+        <div style="display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+            <a href="analytics.html" style="color: white; text-decoration: underline;">Analytics</a>
+            <a href="playlists.html" style="color: white; text-decoration: underline;">Playlists</a>
+            <span id="userStatus" style="color: white; font-size: 14px;"></span>
+        </div>
     </div>
 
-    <div style="max-width: 900px; margin: 20px auto; padding: 0 15px; box-sizing: border-box;">
-        <h2 id="channelTitle">Channel</h2>
-        <hr style="margin: 15px 0;">
-        <h3>Uploaded Videos</h3>
-        <div id="channel-videos" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;"></div>
+    <div style="max-width: 800px; margin: 30px auto; padding: 20px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd; flex-wrap: wrap; gap: 15px;">
+            <div>
+                <h1 id="channelName" style="margin: 0 0 10px 0;">Channel</h1>
+                <p style="margin: 0; color: #555;">Subscribers: <strong id="channelSubCount">0</strong></p>
+            </div>
+            <div id="channelActionContainer"></div>
+        </div>
+
+        <h2 style="margin-top: 30px;">Uploads</h2>
+        <div id="channelVideos" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 15px; margin-top: 15px;"></div>
     </div>
 
     <script>
-        const currentUser = localStorage.getItem('currentUser');
-        if (currentUser) {
+        const currentUser = localStorage.getItem('currentUser') || 'Guest';
+        if (currentUser !== 'Guest') {
             document.getElementById('userStatus').innerHTML = `User: <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
+        } else {
+            document.getElementById('userStatus').textContent = `User: Guest`;
         }
 
         const urlParams = new URLSearchParams(window.location.search);
         const channelName = urlParams.get('name');
 
         if (channelName) {
-            document.getElementById('channelTitle').textContent = `${channelName}'s Channel`;
+            document.getElementById('channelName').textContent = `${channelName}'s Channel`;
+
+            fetch(`/api/users/${channelName}`)
+                .then(res => res.json())
+                .then(data => {
+                    const subCount = data.subscribers.length;
+                    const isSubscribed = data.subscribers.includes(currentUser);
+                    document.getElementById('channelSubCount').textContent = subCount;
+
+                    const actionContainer = document.getElementById('channelActionContainer');
+                    if (channelName === currentUser) {
+                        actionContainer.innerHTML = `<a href="analytics.html" style="padding: 8px 15px; background: #222; color: white; text-decoration: none; border-radius: 4px; font-weight: bold;">View Analytics</a>`;
+                    } else {
+                        const btn = document.createElement('button');
+                        btn.style.padding = '8px 16px';
+                        btn.style.background = isSubscribed ? '#666' : '#cc0000';
+                        btn.style.color = 'white';
+                        btn.style.border = 'none';
+                        btn.style.borderRadius = '4px';
+                        btn.style.cursor = 'pointer';
+                        btn.style.fontWeight = 'bold';
+                        btn.textContent = isSubscribed ? `Subscribed (${subCount})` : `Subscribe (${subCount})`;
+
+                        btn.onclick = () => {
+                            if (currentUser === 'Guest') {
+                                alert('Please login first to subscribe!');
+                                window.location.href = 'login.html';
+                                return;
+                            }
+
+                            fetch('/api/subscribe', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ username: channelName, subscriber: currentUser })
+                            })
+                            .then(res => res.json())
+                            .then(result => {
+                                document.getElementById('channelSubCount').textContent = result.subscribersCount;
+                                if (result.isSubscribed) {
+                                    btn.textContent = `Subscribed (${result.subscribersCount})`;
+                                    btn.style.background = '#666';
+                                } else {
+                                    btn.textContent = `Subscribe (${result.subscribersCount})`;
+                                    btn.style.background = '#cc0000';
+                                }
+                            });
+                        };
+                        actionContainer.appendChild(btn);
+                    }
+                });
 
             fetch('/api/videos')
                 .then(res => res.json())
                 .then(videos => {
-                    const grid = document.getElementById('channel-videos');
+                    const grid = document.getElementById('channelVideos');
                     const userVideos = videos.filter(v => v.uploader === channelName);
                     
                     if (userVideos.length === 0) {
-                        grid.innerHTML = '<p>No videos uploaded by this user yet.</p>';
+                        grid.innerHTML = '<p style="color: gray;">No videos uploaded yet.</p>';
                         return;
                     }
 
                     userVideos.forEach(video => {
                         const card = document.createElement('div');
-                        card.style.width = '100%';
-                        card.style.maxWidth = '280px';
+                        card.style.border = '1px solid #ddd';
+                        card.style.borderRadius = '6px';
+                        card.style.overflow = 'hidden';
+                        card.style.background = '#fff';
                         card.innerHTML = `
-                            <a href="view.html?id=${video.id}">
-                                <img src="${video.thumbnailUrl}" width="100%" height="160" style="object-fit: cover; border-radius: 6px;">
-                            </a>
-                            <h3 style="font-size: 15px; margin: 8px 0 4px 0;">${video.title}</h3>
+                            <a href="view.html?id=${video.id}"><img src="${video.thumbnailUrl}" width="100%" height="130" style="object-fit: cover;"></a>
+                            <div style="padding: 10px;">
+                                <a href="view.html?id=${video.id}" style="text-decoration: none; color: black;"><h4 style="margin: 0 0 8px 0; font-size: 14px;">${video.title}</h4></a>
+                                <p style="margin: 0; font-size: 12px; color: gray;">👍 ${video.likes} Likes</p>
+                            </div>
                         `;
                         grid.appendChild(card);
                     });

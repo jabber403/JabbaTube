@@ -3,131 +3,128 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YouTube Home</title>
+    <title>JabbaTube - Home</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="margin: 0; font-family: Arial, sans-serif;">
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #222; flex-wrap: wrap; gap: 10px;">
-        <a href="index.html">
-            <img class="yt" src="yt.png" width="120" height="50" alt="Logo" style="object-fit: contain;">
-        </a>
-        
-        <!-- Search Bar -->
-        <div style="flex: 1; min-width: 200px; max-width: 500px;">
-            <input type="text" id="searchInput" placeholder="Search videos..." style="width: 100%; padding: 8px 12px; border-radius: 4px; border: none; outline: none; box-sizing: border-box;">
-        </div>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0; background-color: #f9f9f9;">
 
-        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
-            <span id="userStatus" style="color: white; font-size: 14px;"></span>
-            <a href="playlists.html"><button style="padding: 8px 12px; cursor: pointer;">Playlists</button></a>
-            <a href="upload.html"><button style="padding: 8px 12px; cursor: pointer;">Upload</button></a>
-            <a href="login.html" id="loginBtn"><button style="padding: 8px 12px; cursor: pointer;">Login</button></a>
+    <!-- Top Navigation Bar -->
+    <header style="padding: 10px 20px; background: #222; display: flex; justify-content: space-between; align-items: center; color: white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="index.html">
+                <img src="yt.png" width="120" style="object-fit: contain;" alt="JabbaTube Logo">
+            </a>
         </div>
+        <nav style="display: flex; align-items: center; gap: 15px;">
+            <a href="analytics.html" style="color: white; text-decoration: none; font-size: 14px;">Analytics</a>
+            <a href="playlists.html" style="color: white; text-decoration: none; font-size: 14px;">Playlists</a>
+            <a href="upload.html" style="color: white; text-decoration: none; font-size: 14px;">Upload</a>
+            <div id="userStatus" style="font-size: 14px; margin-left: 10px;"></div>
+        </nav>
+    </header>
+
+    <!-- Active Mini-Player Banner -->
+    <div id="miniPlayerContainer" style="background: #111; color: white; padding: 10px 20px; display: none; justify-content: space-between; align-items: center; border-bottom: 1px solid #333;">
+        <div>
+            <span style="font-size: 13px; color: #aaa;">Now Playing:</span> 
+            <a id="miniPlayerTitle" href="#" style="color: white; font-weight: bold; text-decoration: none; margin-left: 5px;"></a>
+        </div>
+        <button onclick="closeMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 16px; padding: 0 5px;">✕</button>
     </div>
 
-    <div style="padding: 15px;">
-        <h2>Recommended Videos</h2>
-        <div id="video-grid" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;"></div>
-    </div>
-
-    <!-- Mini-Player Container -->
-    <div id="miniPlayerContainer" style="display: none; position: fixed; bottom: 10px; right: 10px; width: 300px; background: #111; color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #222;">
-            <span id="miniTitle" style="font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px;"></span>
-            <div>
-                <button onclick="expandMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; margin-right: 5px;" title="Expand">🗖</button>
-                <button onclick="closeMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px;" title="Close">✕</button>
+    <!-- Main Content Container -->
+    <main style="max-width: 1200px; margin: 30px auto; padding: 0 20px;">
+        <section>
+            <h2 style="margin-bottom: 20px; font-size: 22px; color: #222; border-bottom: 2px solid #ddd; padding-bottom: 8px;">Recommended Videos</h2>
+            <div id="videoGrid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 20px;">
+                <!-- Dynamically injected video cards will appear here -->
             </div>
-        </div>
-        <video id="miniVideoPlayer" width="100%" height="160" controls autoplay style="display: block;"></video>
-    </div>
+        </section>
+    </main>
 
+    <!-- Footer Section -->
+    <footer style="text-align: center; padding: 20px; margin-top: 40px; background: #222; color: #aaa; font-size: 13px;">
+        <p style="margin: 0;">&copy; 2026 JabbaTube Platform. All rights reserved.</p>
+    </footer>
+
+    <!-- Client-Side Application Script -->
     <script>
+        // Check current authenticated user from browser local storage
         const currentUser = localStorage.getItem('currentUser');
+        const userStatusEl = document.getElementById('userStatus');
+
         if (currentUser) {
-            document.getElementById('userStatus').innerHTML = `Hello, <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
-            document.getElementById('loginBtn').innerHTML = '<button onclick="logout()" style="padding: 8px 12px; cursor: pointer;">Logout</button>';
-        }
-
-        function logout() {
-            localStorage.removeItem('currentUser');
-            window.location.reload();
-        }
-
-        let allVideos = [];
-
-        fetch('/api/videos')
-            .then(res => res.json())
-            .then(videos => {
-                allVideos = videos;
-                renderVideos(videos);
+            userStatusEl.innerHTML = `User: <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a> | <a href="#" id="logoutBtn" style="color: #ff9999; text-decoration: underline;">Logout</a>`;
+            
+            // Setup logout trigger action
+            document.getElementById('logoutBtn').addEventListener('click', (event) => {
+                event.preventDefault();
+                localStorage.removeItem('currentUser');
+                window.location.reload();
             });
-
-        function renderVideos(videosToRender) {
-            const grid = document.getElementById('video-grid');
-            grid.innerHTML = '';
-            if (videosToRender.length === 0) {
-                grid.innerHTML = '<p>No videos found.</p>';
-                return;
-            }
-
-            videosToRender.forEach(video => {
-                const uploaderDisplay = (video.uploader === currentUser) 
-                    ? 'By You' 
-                    : `By: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
-
-                const card = document.createElement('div');
-                card.style.width = '100%';
-                card.style.maxWidth = '300px';
-                card.innerHTML = `
-                    <a href="view.html?id=${video.id}" onclick="savePlayingState(${video.id}, '${video.title}', '${video.videoUrl}')">
-                        <img class="Thumbnail" src="${video.thumbnailUrl}" width="100%" height="170" style="object-fit: cover; border-radius: 6px;">
-                    </a>
-                    <h3 class="Title" style="font-size: 16px; margin: 8px 0 4px 0;">${video.title}</h3>
-                    <p style="margin: 0; font-size: 14px; color: gray;">${uploaderDisplay}</p>
-                `;
-                grid.appendChild(card);
-            });
+        } else {
+            userStatusEl.innerHTML = `<a href="login.html" style="color: white; text-decoration: underline; margin-right: 10px;">Login</a><a href="signup.html" style="color: white; text-decoration: underline;">Sign Up</a>`;
         }
 
-        document.getElementById('searchInput').addEventListener('input', (e) => {
-            const query = e.target.value.toLowerCase();
-            const filtered = allVideos.filter(v => v.title.toLowerCase().includes(query) || v.uploader.toLowerCase().includes(query));
-            renderVideos(filtered);
-        });
-
-        function savePlayingState(id, title, url) {
-            localStorage.setItem('activeVideo', JSON.stringify({ id, title, url, currentTime: 0 }));
-        }
-
+        // Handle active mini-player session persistence
         const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
-        const miniContainer = document.getElementById('miniPlayerContainer');
-        const miniPlayer = document.getElementById('miniVideoPlayer');
-        const miniTitle = document.getElementById('miniTitle');
-
-        if (activeVideo && activeVideo.url) {
-            miniContainer.style.display = 'block';
-            miniPlayer.src = activeVideo.url;
+        if (activeVideo) {
+            const miniContainer = document.getElementById('miniPlayerContainer');
+            const miniTitle = document.getElementById('miniPlayerTitle');
+            miniContainer.style.display = 'flex';
             miniTitle.textContent = activeVideo.title;
-            miniPlayer.currentTime = activeVideo.currentTime || 0;
-
-            miniPlayer.addEventListener('timeupdate', () => {
-                activeVideo.currentTime = miniPlayer.currentTime;
-                localStorage.setItem('activeVideo', JSON.stringify(activeVideo));
-            });
+            miniTitle.href = `view.html?id=${activeVideo.id}`;
         }
 
         function closeMiniPlayer() {
-            miniContainer.style.display = 'none';
-            miniPlayer.pause();
             localStorage.removeItem('activeVideo');
+            document.getElementById('miniPlayerContainer').style.display = 'none';
         }
 
-        function expandMiniPlayer() {
-            if (activeVideo) {
-                window.location.href = `view.html?id=${activeVideo.id}`;
-            }
-        }
+        // Fetch video catalog from backend API endpoints
+        fetch('/api/videos')
+            .then(response => response.json())
+            .then(videos => {
+                const grid = document.getElementById('videoGrid');
+                
+                if (!videos || videos.length === 0) {
+                    grid.innerHTML = '<p style="color: gray; grid-column: 1 / -1; text-align: center; padding: 40px;">No videos available yet. Be the first to upload one!</p>';
+                    return;
+                }
+
+                videos.forEach(video => {
+                    const card = document.createElement('div');
+                    card.style.border = '1px solid #e0e0e0';
+                    card.style.borderRadius = '8px';
+                    card.style.overflow = 'hidden';
+                    card.style.background = '#fff';
+                    card.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)';
+                    card.style.transition = 'transform 0.2s ease';
+
+                    card.innerHTML = `
+                        <a href="view.html?id=${video.id}">
+                            <img src="${video.thumbnailUrl}" width="100%" height="160" style="object-fit: cover;" alt="${video.title} Thumbnail">
+                        </a>
+                        <div style="padding: 14px;">
+                            <a href="view.html?id=${video.id}" style="text-decoration: none; color: #222;">
+                                <h4 style="margin: 0 0 8px 0; font-size: 15px; line-height: 1.4; height: 38px; overflow: hidden;">${video.title}</h4>
+                            </a>
+                            <p style="margin: 0 0 6px 0; font-size: 13px; color: #666;">
+                                By: <a href="channel.html?name=${video.uploader}" style="color: #0066cc; text-decoration: none; font-weight: bold;">${video.uploader}</a>
+                            </p>
+                            <p style="margin: 0; font-size: 12px; color: #888;">
+                                👍 ${video.likes || 0} Likes &bull; 💬 ${video.comments ? video.comments.length : 0} Comments
+                            </p>
+                        </div>
+                    `;
+                    grid.appendChild(card);
+                });
+            })
+            .catch(error => {
+                console.error('Failed to load video catalog:', error);
+                const grid = document.getElementById('videoGrid');
+                grid.innerHTML = '<p style="color: red; grid-column: 1 / -1; text-align: center;">Error loading videos from server.</p>';
+            });
     </script>
 </body>
 </html>

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channel Analytics - JabbaTube</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center;">
+        <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
+        <div>
+            <a href="index.html" style="color: white; margin-right: 15px; text-decoration: underline;">Home</a>
+            <a id="myChannelLink" href="#" style="color: white; margin-right: 15px; text-decoration: underline;">My Channel</a>
+            <span id="userStatus" style="color: white; font-size: 14px;"></span>
+        </div>
+    </div>
+
+    <div style="max-width: 800px; margin: 30px auto; padding: 20px;">
+        <h2>Channel Analytics</h2>
+        <p id="welcomeAnalyticsUser" style="color: #555; margin-bottom: 20px;"></p>
+
+        <!-- Metric Cards Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px;">
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                <h4 style="margin: 0 0 10px 0; color: gray; font-size: 14px;">Total Subscribers</h4>
+                <p id="totalSubscribers" style="margin: 0; font-size: 24px; font-weight: bold; color: #cc0000;">0</p>
+            </div>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                <h4 style="margin: 0 0 10px 0; color: gray; font-size: 14px;">Total Videos Uploaded</h4>
+                <p id="totalVideos" style="margin: 0; font-size: 24px; font-weight: bold; color: #222;">0</p>
+            </div>
+            <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border: 1px solid #ddd;">
+                <h4 style="margin: 0 0 10px 0; color: gray; font-size: 14px;">Total Likes Received</h4>
+                <p id="totalLikes" style="margin: 0; font-size: 24px; font-weight: bold; color: #222;">0</p>
+            </div>
+        </div>
+
+        <h3>Video Performance Breakdown</h3>
+        <div id="analyticsVideoList" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+    </div>
+
+    <script>
+        const currentUser = localStorage.getItem('currentUser');
+        if (!currentUser) {
+            alert('Please login first to view analytics!');
+            window.location.href = 'login.html';
+        }
+
+        document.getElementById('userStatus').innerHTML = `User: <strong>${currentUser}</strong>`;
+        document.getElementById('myChannelLink').href = `channel.html?name=${currentUser}`;
+        document.getElementById('welcomeAnalyticsUser').textContent = `Overview performance metrics for ${currentUser}`;
+
+        // Fetch user subscription data and video data concurrently
+        Promise.all([
+            fetch(`/api/users/${currentUser}`).then(res => res.json()),
+            fetch('/api/videos').then(res => res.json())
+        ]).then(([userData, videos]) => {
+            const subscribers = userData.subscribers || [];
+            document.getElementById('totalSubscribers').textContent = subscribers.length;
+
+            const userVideos = videos.filter(v => v.uploader === currentUser);
+            document.getElementById('totalVideos').textContent = userVideos.length;
+
+            let totalLikesCount = 0;
+            userVideos.forEach(v => {
+                totalLikesCount += (v.likes || 0);
+            });
+            document.getElementById('totalLikes').textContent = totalLikesCount;
+
+            const listContainer = document.getElementById('analyticsVideoList');
+            if (userVideos.length === 0) {
+                listContainer.innerHTML = '<p style="color: gray;">You have not uploaded any videos yet.</p>';
+                return;
+            }
+
+            userVideos.forEach(video => {
+                const item = document.createElement('div');
+                item.style.display = 'flex';
+                item.style.justifyContent = 'space-between';
+                item.style.alignItems = 'center';
+                item.style.padding = '12px';
+                item.style.background = '#fff';
+                item.style.border = '1px solid #ddd';
+                item.style.borderRadius = '6px';
+                item.innerHTML = `
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <img src="${video.thumbnailUrl}" width="80" height="45" style="object-fit: cover; border-radius: 4px;">
+                        <div>
+                            <a href="view.html?id=${video.id}" style="text-decoration: none; color: black; font-weight: bold; font-size: 14px;">${video.title}</a>
+                            <p style="margin: 4px 0 0 0; font-size: 12px; color: gray;">Uploaded JabbaTube Video</p>
+                        </div>
+                    </div>
+                    <div style="text-align: right; font-size: 13px;">
+                        <span style="background: #f1f1f1; padding: 4px 8px; border-radius: 4px;">👍 ${video.likes} Likes</span>
+                        <span style="background: #f1f1f1; padding: 4px 8px; border-radius: 4px; margin-left: 5px;">💬 ${video.comments.length} Comments</span>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        });
+    </script>
+</body>
+</html>
