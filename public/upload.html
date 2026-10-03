@@ -20,14 +20,14 @@
                 <input type="text" id="titleInput" placeholder="Title" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
             </div>
             <div>
-                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Video File (URL or link)</label>
-                <input type="text" id="videoUrlInput" placeholder="Video URL or Path" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Select Video File</label>
+                <input type="file" id="videoFileInput" accept="video/*" required style="width: 100%; box-sizing: border-box;">
             </div>
             <div>
-                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Thumbnail Image URL</label>
-                <input type="text" id="thumbnailUrlInput" placeholder="Thumbnail URL" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px;">
+                <label style="display: block; font-weight: bold; margin-bottom: 5px;">Select Thumbnail Image</label>
+                <input type="file" id="thumbnailFileInput" accept="image/*" required style="width: 100%; box-sizing: border-box;">
             </div>
-            <button type="submit" style="width: 100%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">Upload</button>
+            <button type="submit" style="width: 100%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">Upload Video</button>
         </form>
     </div>
 
@@ -42,18 +42,27 @@
         document.getElementById('uploadForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const title = document.getElementById('titleInput').value;
-            const videoUrl = document.getElementById('videoUrlInput').value;
-            const thumbnailUrl = document.getElementById('thumbnailUrlInput').value;
+            const videoFile = document.getElementById('videoFileInput').files[0];
+            const thumbnailFile = document.getElementById('thumbnailFileInput').files[0];
+
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('uploader', currentUser);
+            formData.append('videoFile', videoFile);
+            formData.append('thumbnailFile', thumbnailFile);
 
             fetch('/api/videos', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, videoUrl, thumbnailUrl, uploader: currentUser })
+                body: formData
             })
             .then(res => res.json())
             .then(() => {
                 alert('Video uploaded successfully!');
                 window.location.href = 'index.html';
+            })
+            .catch(err => {
+                alert('Upload failed.');
+                console.error(err);
             });
         });
     </script>

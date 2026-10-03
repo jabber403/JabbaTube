@@ -3,52 +3,81 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login / Signup - JabbaTube</title>
+    <title>Login - JabbaTube</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh;">
+<body style="font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh;">
 
-    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; box-sizing: border-box; margin: 20px;">
+    <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; box-sizing: border-box; margin: 15px;">
         <div style="text-align: center; margin-bottom: 20px;">
-            <a href="index.html"><img src="yt.png" width="120" alt="Logo"></a>
-            <h2>Login / Signup</h2>
+            <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
+            <h2 id="formTitle">Login</h2>
         </div>
 
-        <form id="loginForm">
+        <form id="authForm">
+            <div style="margin-bottom: 12px;">
+                <label style="display: block; margin-bottom: 4px; font-weight: bold; font-size: 14px;">Username</label>
+                <input type="text" id="usernameInput" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
+            </div>
             <div style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px;">Username</label>
-                <input type="text" id="usernameInput" placeholder="Enter your username" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
+                <label style="display: block; margin-bottom: 4px; font-weight: bold; font-size: 14px;">Password</label>
+                <input type="password" id="passwordInput" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
             </div>
             
-            <button type="submit" style="width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Continue</button>
+            <button type="submit" id="submitBtn" style="width: 100%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Login</button>
         </form>
+
+        <p style="text-align: center; margin-top: 15px; font-size: 14px;">
+            <span id="toggleText">Don't have an account?</span> 
+            <a href="#" id="toggleModeBtn" style="color: #cc0000; text-decoration: underline;">Sign up</a>
+        </p>
         
-        <p id="errorMsg" style="color: red; text-align: center; margin-top: 15px; font-size: 14px;"></p>
+        <p id="errorMsg" style="color: red; text-align: center; margin-top: 10px; font-size: 14px;"></p>
     </div>
 
     <script>
-        // Redirect if already logged in
         if (localStorage.getItem('currentUser')) {
             window.location.href = 'index.html';
         }
 
-        document.getElementById('loginForm').addEventListener('submit', (e) => {
+        let isSignup = false;
+        const toggleBtn = document.getElementById('toggleModeBtn');
+        const formTitle = document.getElementById('formTitle');
+        const submitBtn = document.getElementById('submitBtn');
+        const toggleText = document.getElementById('toggleText');
+
+        toggleBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSignup = !isSignup;
+            formTitle.textContent = isSignup ? 'Sign Up' : 'Login';
+            submitBtn.textContent = isSignup ? 'Create Account' : 'Login';
+            toggleText.textContent = isSignup ? 'Already have an account?' : "Don't have an account?";
+            toggleBtn.textContent = isSignup ? 'Login' : 'Sign up';
+        });
+
+        document.getElementById('authForm').addEventListener('submit', (e) => {
             e.preventDefault();
             const username = document.getElementById('usernameInput').value.trim();
+            const password = document.getElementById('passwordInput').value.trim();
+            const endpoint = isSignup ? '/api/signup' : '/api/login';
 
-            if (!username) {
-                document.getElementById('errorMsg').textContent = 'Please enter a valid username.';
-                return;
-            }
-
-            // Save user to localStorage safely
-            try {
-                localStorage.setItem('currentUser', username);
-                window.location.href = 'index.html';
-            } catch (err) {
-                document.getElementById('errorMsg').textContent = 'Storage blocked. Please check browser privacy settings.';
-                console.log('localStorage error:', err);
-            }
+            fetch(endpoint, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById('errorMsg').textContent = data.error;
+                } else {
+                    localStorage.setItem('currentUser', data.username);
+                    window.location.href = 'index.html';
+                }
+            })
+            .catch(err => {
+                document.getElementById('errorMsg').textContent = 'An error occurred. Please try again.';
+            });
         });
     </script>
 </body>
