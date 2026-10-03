@@ -21,15 +21,25 @@
             <h1 id="videoTitle" class="Title" style="margin-top: 10px;">Loading...</h1>
             <p id="uploaderContainer" style="margin: 5px 0;"></p>
             
-            <div style="margin: 15px 0; display: flex; gap: 10px; align-items: center;">
+            <div style="margin: 15px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                 <button id="likeBtn" style="padding: 8px 15px; cursor: pointer;">👍 <span id="likeCount">0</span></button>
                 <button id="dislikeBtn" style="padding: 8px 15px; cursor: pointer;">👎 <span id="dislikeCount">0</span></button>
+                <button id="shareBtn" style="padding: 8px 15px; cursor: pointer; background: #eee; border: 1px solid #ccc;">🔗 Share</button>
                 
                 <!-- Add to Playlist Selector -->
                 <select id="playlistSelect" style="padding: 8px;">
                     <option value="">Add to Playlist...</option>
                 </select>
                 <button onclick="addToPlaylist()" style="padding: 8px 12px; cursor: pointer;">Add</button>
+            </div>
+
+            <!-- Share / Embed Box (Hidden by default) -->
+            <div id="shareBox" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ddd;">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 14px;">Copy Video Link</p>
+                <input type="text" id="shareLinkInput" readonly style="width: 100%; padding: 6px; margin-bottom: 10px; box-sizing: border-box;">
+                
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 14px;">Embed HTML Code</p>
+                <input type="text" id="embedCodeInput" readonly style="width: 100%; padding: 6px; box-sizing: border-box;">
             </div>
 
             <hr style="margin: 20px 0;">
@@ -64,7 +74,7 @@
 
         let currentVideoData = null;
         const videoPlayer = document.getElementById('videoPlayer');
-        let nextVideoUrlToPlay = null; // Stores fallback Up Next video link
+        let nextVideoUrlToPlay = null;
 
         if (videoId) {
             fetch(`/api/videos/${videoId}`)
@@ -76,12 +86,17 @@
                     document.getElementById('likeCount').textContent = video.likes;
                     document.getElementById('dislikeCount').textContent = video.dislikes;
                     
+                    // Setup share links
+                    const currentUrl = window.location.href;
+                    const host = window.location.origin;
+                    document.getElementById('shareLinkInput').value = currentUrl;
+                    document.getElementById('embedCodeInput').value = `<iframe src="${host}${video.videoUrl}" width="560" height="315" controls></iframe>`;
+
                     const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
                     if (activeVideo && activeVideo.id == video.id) {
                         videoPlayer.currentTime = activeVideo.currentTime || 0;
                     }
 
-                    // Force playback automatically
                     videoPlayer.play().catch(err => console.log("Autoplay blocked by browser policy:", err));
 
                     videoPlayer.addEventListener('timeupdate', () => {
@@ -93,7 +108,6 @@
                         }));
                     });
 
-                    // Auto-advance logic (Playlist queue vs Regular Up Next queue)
                     videoPlayer.addEventListener('ended', () => {
                         if (playlistId && !isNaN(videoIndex)) {
                             fetch(`/api/playlists/${playlistId}`)
@@ -120,7 +134,16 @@
                     renderComments(video.comments);
                 });
 
-            // Load user playlists for dropdown
+            // Toggle Share Box Visibility
+            document.getElementById('shareBtn').addEventListener('click', () => {
+                const box = document.getElementById('shareBox');
+                box.style.display = box.style.display === 'none' ? 'block' : 'none';
+            });
+
+            // Auto-select text on click for easy copying
+            document.getElementById('shareLinkInput').addEventListener('click', function() { this.select(); });
+            document.getElementById('embedCodeInput').addEventListener('click', function() { this.select(); });
+
             if (currentUser !== 'Guest') {
                 fetch('/api/playlists')
                     .then(res => res.json())
@@ -217,7 +240,6 @@
                 videos.forEach(video => {
                     if (video.id != videoId) {
                         const targetUrl = `view.html?id=${video.id}`;
-                        // Capture the first recommended video as the default Up Next target
                         if (firstRecommendation && !playlistId) {
                             nextVideoUrlToPlay = targetUrl;
                             firstRecommendation = false;
