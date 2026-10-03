@@ -27,7 +27,13 @@
                 <label style="display: block; font-weight: bold; margin-bottom: 5px;">Select Thumbnail Image</label>
                 <input type="file" id="thumbnailFileInput" accept="image/*" required style="width: 100%; box-sizing: border-box;">
             </div>
-            <button type="submit" style="width: 100%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">Upload Video</button>
+
+            <!-- Upload Progress Bar Container -->
+            <div id="progressContainer" style="display: none; width: 100%; background: #e0e0e0; border-radius: 4px; overflow: hidden; height: 22px;">
+                <div id="progressBar" style="width: 0%; height: 100%; background: #cc0000; text-align: center; color: white; font-size: 12px; line-height: 22px; transition: width 0.1s ease;">0%</div>
+            </div>
+
+            <button type="submit" id="uploadBtn" style="width: 100%; padding: 12px; background: #cc0000; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px;">Upload Video</button>
         </form>
     </div>
 
@@ -51,19 +57,47 @@
             formData.append('videoFile', videoFile);
             formData.append('thumbnailFile', thumbnailFile);
 
-            fetch('/api/videos', {
-                method: 'POST',
-                body: formData
-            })
-            .then(res => res.json())
-            .then(() => {
-                alert('Video uploaded successfully!');
-                window.location.href = 'index.html';
-            })
-            .catch(err => {
-                alert('Upload failed.');
-                console.error(err);
-            });
+            const progressContainer = document.getElementById('progressContainer');
+            const progressBar = document.getElementById('progressBar');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            // Show progress bar and disable button
+            progressContainer.style.display = 'block';
+            uploadBtn.disabled = true;
+            uploadBtn.style.opacity = '0.6';
+
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/api/videos', true);
+
+            // Track upload progress
+            xhr.upload.onprogress = (event) => {
+                if (event.lengthComputable) {
+                    const percentComplete = Math.round((event.loaded / event.total) * 100);
+                    progressBar.style.width = percentComplete + '%';
+                    progressBar.textContent = percentComplete + '%';
+                }
+            };
+
+            xhr.onload = () => {
+                if (xhr.status === 200) {
+                    alert('Video uploaded successfully!');
+                    window.location.href = 'index.html';
+                } else {
+                    alert('Upload failed.');
+                    uploadBtn.disabled = false;
+                    uploadBtn.style.opacity = '1';
+                    progressContainer.style.display = 'none';
+                }
+            };
+
+            xhr.onerror = () => {
+                alert('An error occurred during upload.');
+                uploadBtn.disabled = false;
+                uploadBtn.style.opacity = '1';
+                progressContainer.style.display = 'none';
+            };
+
+            xhr.send(formData);
         });
     </script>
 </body>
