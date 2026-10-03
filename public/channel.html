@@ -2,100 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Channel Profile</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Channel - JabbaTube</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div style="padding: 10px 20px; background: #222; display: flex; justify-content: space-between; align-items: center;">
-        <a href="index.html"><img class="yt" src="yt.png" width="150" height="70"></a>
-        <span id="userDisplay" style="color: white;"></span>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 0;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center;">
+        <a href="index.html"><img src="yt.png" width="120" style="object-fit: contain;"></a>
+        <span id="userStatus" style="color: white; font-size: 14px;"></span>
     </div>
 
-    <div style="padding: 30px;">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-            <div>
-                <h1 id="channelTitle" style="margin: 0;">Channel Name</h1>
-                <p id="subCountDisplay" style="color: gray; margin: 5px 0 15px 0;">0 subscribers</p>
-            </div>
-            <button id="subscribeBtn" style="padding: 10px 20px; cursor: pointer; background: red; color: white; border: none; border-radius: 4px; font-weight: bold; display: none;">Subscribe</button>
-        </div>
-        <hr style="margin-bottom: 20px;">
+    <div style="max-width: 900px; margin: 20px auto; padding: 0 15px; box-sizing: border-box;">
+        <h2 id="channelTitle">Channel</h2>
+        <hr style="margin: 15px 0;">
         <h3>Uploaded Videos</h3>
-        <div id="channel-grid" style="display: flex; flex-wrap: wrap; gap: 20px;"></div>
+        <div id="channel-videos" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;"></div>
     </div>
 
     <script>
-        const currentUser = localStorage.getItem('currentUser') || 'Guest';
-        if (currentUser !== 'Guest') {
-            document.getElementById('userDisplay').innerHTML = `Logged in as: <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
+        const currentUser = localStorage.getItem('currentUser');
+        if (currentUser) {
+            document.getElementById('userStatus').innerHTML = `User: <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
         }
 
         const urlParams = new URLSearchParams(window.location.search);
         const channelName = urlParams.get('name');
-        document.getElementById('channelTitle').textContent = `${channelName}'s Channel`;
 
-        // Show subscribe button if logged in and not looking at your own channel
-        const subBtn = document.getElementById('subscribeBtn');
-        if (currentUser !== 'Guest' && currentUser !== channelName) {
-            subBtn.style.display = 'block';
-            
-            // Check initial subscription status
-            fetch(`/api/is-subscribed?subscriber=${currentUser}&channel=${channelName}`)
+        if (channelName) {
+            document.getElementById('channelTitle').textContent = `${channelName}'s Channel`;
+
+            fetch('/api/videos')
                 .then(res => res.json())
-                .then(data => {
-                    updateSubscribeButton(data.isSubscribed);
+                .then(videos => {
+                    const grid = document.getElementById('channel-videos');
+                    const userVideos = videos.filter(v => v.uploader === channelName);
+                    
+                    if (userVideos.length === 0) {
+                        grid.innerHTML = '<p>No videos uploaded by this user yet.</p>';
+                        return;
+                    }
+
+                    userVideos.forEach(video => {
+                        const card = document.createElement('div');
+                        card.style.width = '100%';
+                        card.style.maxWidth = '280px';
+                        card.innerHTML = `
+                            <a href="view.html?id=${video.id}">
+                                <img src="${video.thumbnailUrl}" width="100%" height="160" style="object-fit: cover; border-radius: 6px;">
+                            </a>
+                            <h3 style="font-size: 15px; margin: 8px 0 4px 0;">${video.title}</h3>
+                        `;
+                        grid.appendChild(card);
+                    });
                 });
         }
-
-        function updateSubscribeButton(isSubscribed) {
-            if (isSubscribed) {
-                subBtn.textContent = 'Subscribed';
-                subBtn.style.background = '#ccc';
-                subBtn.style.color = 'black';
-            } else {
-                subBtn.textContent = 'Subscribe';
-                subBtn.style.background = 'red';
-                subBtn.style.color = 'white';
-            }
-        }
-
-        subBtn.addEventListener('click', () => {
-            fetch('/api/subscribe', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ subscriber: currentUser, channelToSubscribe: channelName })
-            })
-            .then(res => res.json())
-            .then(data => {
-                updateSubscribeButton(data.isSubscribed);
-                document.getElementById('subCountDisplay').textContent = `${data.subscriberCount} subscribers`;
-            });
-        });
-
-        // Load Channel Data & Videos
-        fetch(`/api/channels/${channelName}`)
-            .then(res => res.json())
-            .then(data => {
-                document.getElementById('subCountDisplay').textContent = `${data.subscriberCount} subscribers`;
-                const grid = document.getElementById('channel-grid');
-                
-                if (data.videos.length === 0) {
-                    grid.innerHTML = '<p>This channel has no uploaded videos.</p>';
-                    return;
-                }
-
-                data.videos.forEach(video => {
-                    const card = document.createElement('div');
-                    card.style.width = '300px';
-                    card.innerHTML = `
-                        <a href="view.html?id=${video.id}">
-                            <img class="Thumbnail" src="${video.thumbnailUrl}" width="300" height="170">
-                        </a>
-                        <h3 class="Title">${video.title}</h3>
-                    `;
-                    grid.appendChild(card);
-                });
-            });
     </script>
 </body>
 </html>

@@ -2,40 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Login - YouTube</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login / Signup - JabbaTube</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body style="display: flex; justify-content: center; align-items: center; height: 100vh;">
-    <div style="background: white; padding: 30px; border-radius: 8px; text-align: center; width: 300px;">
-        <img src="yt.png" width="120" style="margin-bottom: 20px;">
-        <h2>Sign In / Sign Up</h2>
-        <input type="text" id="username" placeholder="Username" style="width: 90%; padding: 8px; margin-bottom: 10px;"><br>
-        <input type="password" id="password" placeholder="Password" style="width: 90%; padding: 8px; margin-bottom: 15px;"><br>
-        <button onclick="auth('login')" style="padding: 8px 15px; cursor: pointer;">Login</button>
-        <button onclick="auth('signup')" style="padding: 8px 15px; cursor: pointer; margin-left: 5px;">Sign Up</button>
-        <p id="errorMsg" style="color: red; font-size: 14px; margin-top: 10px;"></p>
+<body style="font-family: Arial, sans-serif; background: #f4f4f4; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; height: 100vh;">
+
+    <div style="background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); width: 100%; max-width: 350px; box-sizing: border-box; margin: 20px;">
+        <div style="text-align: center; margin-bottom: 20px;">
+            <a href="index.html"><img src="yt.png" width="120" alt="Logo"></a>
+            <h2>Login / Signup</h2>
+        </div>
+
+        <form id="loginForm">
+            <div style="margin-bottom: 15px;">
+                <label style="display: block; margin-bottom: 5px; font-weight: bold; font-size: 14px;">Username</label>
+                <input type="text" id="usernameInput" placeholder="Enter your username" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; font-size: 16px;">
+            </div>
+            
+            <button type="submit" style="width: 100%; padding: 10px; background: #cc0000; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold;">Continue</button>
+        </form>
+        
+        <p id="errorMsg" style="color: red; text-align: center; margin-top: 15px; font-size: 14px;"></p>
     </div>
 
     <script>
-        function auth(endpoint) {
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-
-            fetch(`/api/${endpoint}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username, password })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    localStorage.setItem('currentUser', data.username);
-                    window.location.href = 'index.html';
-                } else {
-                    document.getElementById('errorMsg').textContent = data.error;
-                }
-            });
+        // Redirect if already logged in
+        if (localStorage.getItem('currentUser')) {
+            window.location.href = 'index.html';
         }
+
+        document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const username = document.getElementById('usernameInput').value.trim();
+
+            if (!username) {
+                document.getElementById('errorMsg').textContent = 'Please enter a valid username.';
+                return;
+            }
+
+            // Save user to localStorage safely
+            try {
+                localStorage.setItem('currentUser', username);
+                window.location.href = 'index.html';
+            } catch (err) {
+                document.getElementById('errorMsg').textContent = 'Storage blocked. Please check browser privacy settings.';
+                console.log('localStorage error:', err);
+            }
+        });
     </script>
 </body>
 </html>

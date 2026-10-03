@@ -2,50 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>YouTube Home</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 20px; background: #222;">
+<body style="margin: 0; font-family: Arial, sans-serif;">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 10px 15px; background: #222; flex-wrap: wrap; gap: 10px;">
         <a href="index.html">
-            <img class="yt" src="yt.png" width="150" height="70" alt="Logo">
+            <img class="yt" src="yt.png" width="120" height="50" alt="Logo" style="object-fit: contain;">
         </a>
         
         <!-- Search Bar -->
-        <div style="flex: 1; max-width: 500px; margin: 0 20px;">
-            <input type="text" id="searchInput" placeholder="Search videos..." style="width: 100%; padding: 8px 12px; border-radius: 4px; border: none; outline: none;">
+        <div style="flex: 1; min-width: 200px; max-width: 500px;">
+            <input type="text" id="searchInput" placeholder="Search videos..." style="width: 100%; padding: 8px 12px; border-radius: 4px; border: none; outline: none; box-sizing: border-box;">
         </div>
 
-        <div>
-            <span id="userStatus" style="color: white; margin-right: 15px;"></span>
-            <a href="playlists.html"><button style="padding: 8px 15px; cursor: pointer; margin-right: 5px;">Playlists</button></a>
-            <a href="upload.html"><button style="padding: 8px 15px; cursor: pointer;">Upload Video</button></a>
-            <a href="login.html" id="loginBtn"><button style="padding: 8px 15px; cursor: pointer; margin-left: 5px;">Login</button></a>
+        <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 5px;">
+            <span id="userStatus" style="color: white; font-size: 14px;"></span>
+            <a href="playlists.html"><button style="padding: 8px 12px; cursor: pointer;">Playlists</button></a>
+            <a href="upload.html"><button style="padding: 8px 12px; cursor: pointer;">Upload</button></a>
+            <a href="login.html" id="loginBtn"><button style="padding: 8px 12px; cursor: pointer;">Login</button></a>
         </div>
     </div>
 
-    <div style="padding: 20px;">
+    <div style="padding: 15px;">
         <h2>Recommended Videos</h2>
-        <div id="video-grid" style="display: flex; flex-wrap: wrap; gap: 20px;"></div>
+        <div id="video-grid" style="display: flex; flex-wrap: wrap; gap: 20px; justify-content: center;"></div>
     </div>
 
-    <!-- Mini-Player Container (Bottom Right) -->
-    <div id="miniPlayerContainer" style="display: none; position: fixed; bottom: 20px; right: 20px; width: 320px; background: #111; color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden;">
-        <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: #222;">
-            <span id="miniTitle" style="font-size: 13px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 240px;"></span>
+    <!-- Mini-Player Container -->
+    <div id="miniPlayerContainer" style="display: none; position: fixed; bottom: 10px; right: 10px; width: 300px; background: #111; color: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 1000; overflow: hidden;">
+        <div style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; background: #222;">
+            <span id="miniTitle" style="font-size: 12px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 210px;"></span>
             <div>
                 <button onclick="expandMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px; margin-right: 5px;" title="Expand">🗖</button>
                 <button onclick="closeMiniPlayer()" style="background: none; border: none; color: white; cursor: pointer; font-size: 14px;" title="Close">✕</button>
             </div>
         </div>
-        <video id="miniVideoPlayer" width="100%" height="180" controls autoplay style="display: block;"></video>
+        <video id="miniVideoPlayer" width="100%" height="160" controls autoplay style="display: block;"></video>
     </div>
 
     <script>
         const currentUser = localStorage.getItem('currentUser');
         if (currentUser) {
             document.getElementById('userStatus').innerHTML = `Hello, <a href="channel.html?name=${currentUser}" style="color: white; text-decoration: underline;">${currentUser}</a>`;
-            document.getElementById('loginBtn').innerHTML = '<button onclick="logout()" style="padding: 8px 15px; cursor: pointer;">Logout</button>';
+            document.getElementById('loginBtn').innerHTML = '<button onclick="logout()" style="padding: 8px 12px; cursor: pointer;">Logout</button>';
         }
 
         function logout() {
@@ -55,7 +56,6 @@
 
         let allVideos = [];
 
-        // Fetch and display videos
         fetch('/api/videos')
             .then(res => res.json())
             .then(videos => {
@@ -77,19 +77,19 @@
                     : `By: <a href="channel.html?name=${video.uploader}">${video.uploader}</a>`;
 
                 const card = document.createElement('div');
-                card.style.width = '300px';
+                card.style.width = '100%';
+                card.style.maxWidth = '300px';
                 card.innerHTML = `
                     <a href="view.html?id=${video.id}" onclick="savePlayingState(${video.id}, '${video.title}', '${video.videoUrl}')">
-                        <img class="Thumbnail" src="${video.thumbnailUrl}" width="300" height="170">
+                        <img class="Thumbnail" src="${video.thumbnailUrl}" width="100%" height="170" style="object-fit: cover; border-radius: 6px;">
                     </a>
-                    <h3 class="Title">${video.title}</h3>
-                    <p style="margin: 5px 0;">${uploaderDisplay}</p>
+                    <h3 class="Title" style="font-size: 16px; margin: 8px 0 4px 0;">${video.title}</h3>
+                    <p style="margin: 0; font-size: 14px; color: gray;">${uploaderDisplay}</p>
                 `;
                 grid.appendChild(card);
             });
         }
 
-        // Search Bar Functionality
         document.getElementById('searchInput').addEventListener('input', (e) => {
             const query = e.target.value.toLowerCase();
             const filtered = allVideos.filter(v => v.title.toLowerCase().includes(query) || v.uploader.toLowerCase().includes(query));
@@ -100,7 +100,6 @@
             localStorage.setItem('activeVideo', JSON.stringify({ id, title, url, currentTime: 0 }));
         }
 
-        // Mini-Player Check on Load
         const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
         const miniContainer = document.getElementById('miniPlayerContainer');
         const miniPlayer = document.getElementById('miniVideoPlayer');

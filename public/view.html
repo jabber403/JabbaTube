@@ -2,60 +2,60 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Watch Video</title>
     <link rel="stylesheet" href="style.css">
 </head>
-<body>
-    <div style="padding: 10px 20px; background: #222; display: flex; justify-content: space-between; align-items: center;">
-        <a href="index.html" onclick="triggerMiniPlayer()"><img class="yt" src="yt.png" width="150" height="70"></a>
+<body style="margin: 0; font-family: Arial, sans-serif;">
+    <div style="padding: 10px 15px; background: #222; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+        <a href="index.html" onclick="triggerMiniPlayer()"><img class="yt" src="yt.png" width="120" height="50" style="object-fit: contain;"></a>
         <div>
-            <a href="playlists.html" style="color: white; margin-right: 20px; text-decoration: underline;">Playlists</a>
-            <span id="userStatus" style="color: white;"></span>
+            <a href="playlists.html" style="color: white; margin-right: 15px; text-decoration: underline;">Playlists</a>
+            <span id="userStatus" style="color: white; font-size: 14px;"></span>
         </div>
     </div>
 
-    <div style="display: flex; padding: 20px; gap: 30px; flex-wrap: wrap;">
+    <div style="display: flex; padding: 15px; gap: 20px; flex-wrap: wrap;">
         <!-- Left Column: Video, Details, Likes, Comments -->
-        <div style="flex: 2; min-width: 400px;">
-            <video id="videoPlayer" class="Video" controls autoplay width="100%" height="450"></video>
-            <h1 id="videoTitle" class="Title" style="margin-top: 10px;">Loading...</h1>
-            <p id="uploaderContainer" style="margin: 5px 0;"></p>
+        <div style="flex: 2; min-width: 300px; width: 100%;">
+            <video id="videoPlayer" class="Video" controls autoplay width="100%" style="max-height: 450px; background: black; border-radius: 6px;"></video>
+            <h1 id="videoTitle" class="Title" style="font-size: 20px; margin-top: 10px;">Loading...</h1>
+            <p id="uploaderContainer" style="margin: 5px 0; color: gray;"></p>
             
-            <div style="margin: 15px 0; display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
-                <button id="likeBtn" style="padding: 8px 15px; cursor: pointer;">👍 <span id="likeCount">0</span></button>
-                <button id="dislikeBtn" style="padding: 8px 15px; cursor: pointer;">👎 <span id="dislikeCount">0</span></button>
-                <button id="shareBtn" style="padding: 8px 15px; cursor: pointer; background: #eee; border: 1px solid #ccc;">🔗 Share</button>
+            <div style="margin: 15px 0; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                <button id="likeBtn" style="padding: 8px 12px; cursor: pointer;">👍 <span id="likeCount">0</span></button>
+                <button id="dislikeBtn" style="padding: 8px 12px; cursor: pointer;">👎 <span id="dislikeCount">0</span></button>
+                <button id="shareBtn" style="padding: 8px 12px; cursor: pointer; background: #eee; border: 1px solid #ccc;">🔗 Share</button>
                 
-                <!-- Add to Playlist Selector -->
                 <select id="playlistSelect" style="padding: 8px;">
                     <option value="">Add to Playlist...</option>
                 </select>
                 <button onclick="addToPlaylist()" style="padding: 8px 12px; cursor: pointer;">Add</button>
             </div>
 
-            <!-- Share / Embed Box (Hidden by default) -->
-            <div id="shareBox" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ddd;">
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 14px;">Copy Video Link</p>
+            <!-- Share / Embed Box -->
+            <div id="shareBox" style="display: none; background: #f9f9f9; padding: 12px; border-radius: 6px; margin-bottom: 15px; border: 1px solid #ddd;">
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">Copy Video Link</p>
                 <input type="text" id="shareLinkInput" readonly style="width: 100%; padding: 6px; margin-bottom: 10px; box-sizing: border-box;">
                 
-                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 14px;">Embed HTML Code</p>
+                <p style="margin: 0 0 5px 0; font-weight: bold; font-size: 13px;">Embed HTML Code</p>
                 <input type="text" id="embedCodeInput" readonly style="width: 100%; padding: 6px; box-sizing: border-box;">
             </div>
 
             <hr style="margin: 20px 0;">
 
             <h3>Comments</h3>
-            <form id="commentForm">
-                <input type="text" id="commentInput" placeholder="Add a comment..." required style="padding: 8px; width: 70%;">
-                <button type="submit" style="padding: 8px 15px;">Comment</button>
+            <form id="commentForm" style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <input type="text" id="commentInput" placeholder="Add a comment..." required style="padding: 8px; flex: 1; min-width: 200px; box-sizing: border-box;">
+                <button type="submit" style="padding: 8px 15px; cursor: pointer;">Comment</button>
             </form>
-            <div id="commentsList" style="margin-top: 15px;"></div>
+            <div id="commentsList" style="margin-top: 15px; display: flex; flex-direction: column; gap: 10px;"></div>
         </div>
 
         <!-- Right Column: Sidebar Recommendations -->
-        <div style="flex: 1; min-width: 280px;">
+        <div style="flex: 1; min-width: 280px; width: 100%;">
             <h3>Up Next</h3>
-            <div id="sidebar-recommendations" style="display: flex; flex-direction: column; gap: 15px;"></div>
+            <div id="sidebar-recommendations" style="display: flex; flex-direction: column; gap: 12px;"></div>
         </div>
     </div>
 
@@ -86,18 +86,15 @@
                     document.getElementById('likeCount').textContent = video.likes;
                     document.getElementById('dislikeCount').textContent = video.dislikes;
                     
-                    // Setup share links
-                    const currentUrl = window.location.href;
-                    const host = window.location.origin;
-                    document.getElementById('shareLinkInput').value = currentUrl;
-                    document.getElementById('embedCodeInput').value = `<iframe src="${host}${video.videoUrl}" width="560" height="315" controls></iframe>`;
+                    document.getElementById('shareLinkInput').value = window.location.href;
+                    document.getElementById('embedCodeInput').value = `<iframe src="${window.location.origin}${video.videoUrl}" width="560" height="315" controls></iframe>`;
 
                     const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
                     if (activeVideo && activeVideo.id == video.id) {
                         videoPlayer.currentTime = activeVideo.currentTime || 0;
                     }
 
-                    videoPlayer.play().catch(err => console.log("Autoplay blocked by browser policy:", err));
+                    videoPlayer.play().catch(err => console.log("Autoplay restricted:", err));
 
                     videoPlayer.addEventListener('timeupdate', () => {
                         localStorage.setItem('activeVideo', JSON.stringify({ 
@@ -115,8 +112,7 @@
                                 .then(playlist => {
                                     const nextIndex = videoIndex + 1;
                                     if (playlist.videoIds[nextIndex]) {
-                                        const nextVideoId = playlist.videoIds[nextIndex];
-                                        window.location.href = `view.html?id=${nextVideoId}&playlistId=${playlistId}&index=${nextIndex}`;
+                                        window.location.href = `view.html?id=${playlist.videoIds[nextIndex]}&playlistId=${playlistId}&index=${nextIndex}`;
                                     }
                                 });
                         } else if (nextVideoUrlToPlay) {
@@ -134,13 +130,11 @@
                     renderComments(video.comments);
                 });
 
-            // Toggle Share Box Visibility
             document.getElementById('shareBtn').addEventListener('click', () => {
                 const box = document.getElementById('shareBox');
                 box.style.display = box.style.display === 'none' ? 'block' : 'none';
             });
 
-            // Auto-select text on click for easy copying
             document.getElementById('shareLinkInput').addEventListener('click', function() { this.select(); });
             document.getElementById('embedCodeInput').addEventListener('click', function() { this.select(); });
 
@@ -248,9 +242,10 @@
                         const item = document.createElement('div');
                         item.style.display = 'flex';
                         item.style.gap = '10px';
+                        item.style.alignItems = 'center';
                         item.innerHTML = `
-                            <a href="${targetUrl}" onclick="triggerMiniPlayer()"><img src="${video.thumbnailUrl}" width="120" height="70" style="object-fit: cover;"></a>
-                            <div><a href="${targetUrl}" onclick="triggerMiniPlayer()" style="text-decoration: none; color: black;"><h4 style="margin: 0; font-size: 14px;">${video.title}</h4></a></div>
+                            <a href="${targetUrl}" onclick="triggerMiniPlayer()"><img src="${video.thumbnailUrl}" width="110" height="65" style="object-fit: cover; border-radius: 4px;"></a>
+                            <div><a href="${targetUrl}" onclick="triggerMiniPlayer()" style="text-decoration: none; color: black;"><h4 style="margin: 0; font-size: 13px;">${video.title}</h4></a></div>
                         `;
                         sidebar.appendChild(item);
                     }
@@ -263,9 +258,10 @@
             comments.forEach(c => {
                 const authorDisplay = (c.username === currentUser) ? 'You' : `<a href="channel.html?name=${c.username}">${c.username}</a>`;
                 const p = document.createElement('p');
-                p.style.background = '#eee';
+                p.style.background = '#f1f1f1';
                 p.style.padding = '8px';
                 p.style.borderRadius = '4px';
+                p.style.margin = '0';
                 p.innerHTML = `<strong>${authorDisplay}</strong> <span style="font-size: 11px; color: gray;">${c.date}</span><br>${c.text}`;
                 list.appendChild(p);
             });
