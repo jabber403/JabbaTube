@@ -18,7 +18,8 @@
     <div style="display: flex; padding: 15px; gap: 20px; flex-wrap: wrap;">
         <!-- Left Column: Video, Details, Likes, Comments -->
         <div style="flex: 2; min-width: 300px; width: 100%;">
-            <video id="videoPlayer" class="Video" controls autoplay width="100%" style="max-height: 450px; background: black; border-radius: 6px;"></video>
+            <!-- Added playsinline and webkit-playsinline to prevent automatic fullscreen on mobile -->
+            <video id="videoPlayer" class="Video" controls autoplay playsinline webkit-playsinline width="100%" style="max-height: 450px; background: black; border-radius: 6px;"></video>
             <h1 id="videoTitle" class="Title" style="font-size: 20px; margin-top: 10px;">Loading...</h1>
             <p id="uploaderContainer" style="margin: 5px 0; color: gray;"></p>
             
@@ -76,6 +77,19 @@
         const videoPlayer = document.getElementById('videoPlayer');
         let nextVideoUrlToPlay = null;
 
+        // Automatically request landscape orientation when user enters full screen
+        videoPlayer.addEventListener('fullscreenchange', () => {
+            if (document.fullscreenElement === videoPlayer) {
+                if (screen.orientation && screen.orientation.lock) {
+                    screen.orientation.lock('landscape').catch(err => console.log('Orientation lock not supported:', err));
+                }
+            } else {
+                if (screen.orientation && screen.orientation.unlock) {
+                    screen.orientation.unlock();
+                }
+            }
+        });
+
         if (videoId) {
             fetch(`/api/videos/${videoId}`)
                 .then(res => res.json())
@@ -87,7 +101,7 @@
                     document.getElementById('dislikeCount').textContent = video.dislikes;
                     
                     document.getElementById('shareLinkInput').value = window.location.href;
-                    document.getElementById('embedCodeInput').value = `<iframe src="${window.location.origin}${video.videoUrl}" width="560" height="315" controls></iframe>`;
+                    document.getElementById('embedCodeInput').value = `<iframe src="${window.location.origin}${video.videoUrl}" width="560" height="315" controls playsinline></iframe>`;
 
                     const activeVideo = JSON.parse(localStorage.getItem('activeVideo'));
                     if (activeVideo && activeVideo.id == video.id) {
